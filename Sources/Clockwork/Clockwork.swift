@@ -1,39 +1,26 @@
 //
-//  main.swift
+//  Clockwork.swift
 //  
 //
-//  Created by Dr. Brandon Wiley on 1/1/23.
+//  Created by Dr. Brandon Wiley on 1/5/23.
 //
 
 import ArgumentParser
 import Foundation
 
-#if os(macOS) || os(iOS)
-import os.log
-#else
-import Logging
-#endif
-
-import SwiftParser
-import SwiftSyntax
-
 import Gardener
 
-struct CommandLine: ParsableCommand
+public class Clockwork
 {
-    static let configuration = CommandConfiguration(commandName: "clockwork")
+    public init()
+    {
+    }
 
-    @Argument(help: "directory in which to find the .swift source files")
-    var sources: String
-
-    @Argument(help: "directory to output generated files")
-    var output: String
-
-    mutating public func run() throws
+    public func generate(sources: String, output: String) throws
     {
         guard File.isDirectory(sources) else
         {
-            throw CommandLineError.sourcesDirectoryDoesNotExist
+            throw ClockworkError.sourcesDirectoryDoesNotExist
         }
 
         let outputURL = URL(fileURLWithPath: output)
@@ -41,7 +28,7 @@ struct CommandLine: ParsableCommand
         {
             guard File.makeDirectory(url: outputURL) else
             {
-                throw CommandLineError.noOutputDirectory
+                throw ClockworkError.noOutputDirectory
             }
         }
 
@@ -50,16 +37,14 @@ struct CommandLine: ParsableCommand
         let _ = files.map { self.generate($0, outputURL) }
     }
 
-    func generate(_ sourceURL: URL, _ outputURL: URL)
+    public func generate(_ input: URL, _ outputURL: URL)
     {
         do
         {
-            let source = try String(contentsOf: sourceURL)
+            let source = try String(contentsOf: input)
             let className = try self.findClassName(source)
-            print(className)
 
             let functions = try self.findFunctions(source)
-            print(functions)
 
             guard functions.count > 0 else
             {
@@ -76,6 +61,75 @@ struct CommandLine: ParsableCommand
         }
     }
 
+    public func generateMessages(_ input: URL, _ output: URL)
+    {
+        do
+        {
+            let source = try String(contentsOf: input)
+            let className = try self.findClassName(source)
+
+            let functions = try self.findFunctions(source)
+
+            guard functions.count > 0 else
+            {
+                return
+            }
+
+            let outputFile = output.appending(component: "\(className)Messages.swift")
+            try self.generateMessages(outputFile, className, functions)
+        }
+        catch
+        {
+            print(error)
+        }
+    }
+
+    public func generateClient(_ input: URL, _ output: URL)
+    {
+        do
+        {
+            let source = try String(contentsOf: input)
+            let className = try self.findClassName(source)
+
+            let functions = try self.findFunctions(source)
+
+            guard functions.count > 0 else
+            {
+                return
+            }
+
+            let outputFile = output.appending(component: "\(className)Client.swift")
+            try self.generateClient(outputFile, className, functions)
+        }
+        catch
+        {
+            print(error)
+        }
+    }
+
+    public func generateServer(_ input: URL, _ output: URL)
+    {
+        do
+        {
+            let source = try String(contentsOf: input)
+            let className = try self.findClassName(source)
+
+            let functions = try self.findFunctions(source)
+
+            guard functions.count > 0 else
+            {
+                return
+            }
+
+            let outputFile = output.appending(component: "\(className)Server.swift")
+            try self.generateServer(outputFile, className, functions)
+        }
+        catch
+        {
+            print(error)
+        }
+    }
+
     func findClassName(_ source: String) throws -> String
     {
         let regex = try Regex("class [A-Za-z0-9]+")
@@ -84,11 +138,11 @@ struct CommandLine: ParsableCommand
         {
             if ranges.count == 0
             {
-                throw CommandLineError.noMatches
+                throw ClockworkError.noMatches
             }
             else
             {
-                throw CommandLineError.tooManyMatches
+                throw ClockworkError.tooManyMatches
             }
         }
 
@@ -135,22 +189,22 @@ struct CommandLine: ParsableCommand
     {
         guard function.firstIndex(of: "@") == nil else
         {
-            throw CommandLineError.badFunctionFormat
+            throw ClockworkError.badFunctionFormat
         }
 
         guard function.firstIndex(of: "_") == nil else
         {
-            throw CommandLineError.badFunctionFormat
+            throw ClockworkError.badFunctionFormat
         }
 
         guard let parameterStart = function.firstIndex(of: "(") else
         {
-            throw CommandLineError.badFunctionFormat
+            throw ClockworkError.badFunctionFormat
         }
 
         guard let parameterEnd = function.firstIndex(of: ")") else
         {
-            throw CommandLineError.badFunctionFormat
+            throw ClockworkError.badFunctionFormat
         }
 
         if function.index(after: parameterStart) == parameterEnd
@@ -168,7 +222,7 @@ struct CommandLine: ParsableCommand
             let subparts = part.split(separator: ": ")
             guard subparts.count == 2 else
             {
-                throw CommandLineError.badFunctionFormat
+                throw ClockworkError.badFunctionFormat
             }
 
             let name = String(subparts[0])
@@ -196,54 +250,27 @@ struct CommandLine: ParsableCommand
     {
         print("Generating \(className)Messages...")
 
-        let directory = outputURL.appending(component: className)
-        if !File.exists(directory.path)
-        {
-            guard File.makeDirectory(url: directory) else
-            {
-                throw CommandLineError.noOutputDirectory
-            }
-        }
-
+        let outputFile = outputURL.appending(component: "\(className)Messages.swift")
         let result = try self.generateRequestText(className, functions)
-        let file = directory.appending(component: "\(className)Messages.swift")
-        try result.write(to: file, atomically: true, encoding: .utf8)
+        try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
     func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
         print("Generating \(className)Client...")
 
-        let directory = outputURL.appending(component: className)
-        if !File.exists(directory.path)
-        {
-            guard File.makeDirectory(url: directory) else
-            {
-                throw CommandLineError.noOutputDirectory
-            }
-        }
-
+        let outputFile = outputURL.appending(component: "\(className)Client.swift")
         let result = try self.generateClientText(className, functions)
-        let file = directory.appending(component: "\(className)Client.swift")
-        try result.write(to: file, atomically: true, encoding: .utf8)
+        try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
     func generateServer(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
         print("Generating \(className)Server...")
 
-        let directory = outputURL.appending(component: className)
-        if !File.exists(directory.path)
-        {
-            guard File.makeDirectory(url: directory) else
-            {
-                throw CommandLineError.noOutputDirectory
-            }
-        }
-
+        let outputFile = outputURL.appending(component: "\(className)Server.swift")
         let result = try self.generateServerText(className, functions)
-        let file = directory.appending(component: "\(className)Server.swift")
-        try result.write(to: file, atomically: true, encoding: .utf8)
+        try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
     func generateRequestText(_ className: String, _ functions: [Function]) throws -> String
@@ -252,7 +279,7 @@ struct CommandLine: ParsableCommand
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        
+
         let dateString = formatter.string(from: date)
 
         let requestEnums = self.generateRequestEnumsText(functions)
@@ -704,9 +731,8 @@ struct CommandLine: ParsableCommand
     {
         return "\(argument.name): \(argument.name)"
     }
-}
 
-CommandLine.main()
+}
 
 public struct Function
 {
@@ -722,7 +748,7 @@ public struct FunctionParameter
     let type: String
 }
 
-public enum CommandLineError: Error
+public enum ClockworkError: Error
 {
     case sourcesDirectoryDoesNotExist
     case noMatches

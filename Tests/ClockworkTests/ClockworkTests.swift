@@ -1,8 +1,10 @@
 import XCTest
 
 import Transmission
+import TransmissionTypes
 
 @testable import Clockwork
+@testable import ClockworkExamples
 
 final class ClockworkTests: XCTestCase
 {

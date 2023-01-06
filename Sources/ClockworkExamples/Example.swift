@@ -7,6 +7,8 @@
 
 import Foundation
 
+import TransmissionTypes
+
 public class Example
 {
     var count = 0
