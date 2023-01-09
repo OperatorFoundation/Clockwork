@@ -15,6 +15,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.1.4"),
 
         .package(url: "https://github.com/OperatorFoundation/Gardener", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/Spacetime", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Transmission", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/TransmissionTypes", branch: "main"),
     ],
@@ -32,11 +33,24 @@ let package = Package(
             dependencies: [
                 "Transmission",
                 "TransmissionTypes",
+
+                .product(name: "Simulation", package: "Spacetime"),
+                .product(name: "Spacetime", package: "Spacetime"),
+                .product(name: "Universe", package: "Spacetime"),
             ],
             plugins: [.plugin(name: "Clockwork")]
         ),
         .executableTarget(
             name: "ClockworkCommandLine",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+
+                "Clockwork",
+                "Gardener",
+            ]
+        ),
+        .executableTarget(
+            name: "ClockworkSpacetimeCommandLine",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
 
@@ -58,6 +72,7 @@ let package = Package(
                 "TransmissionTypes",
 
                 "Clockwork",
+                "ClockworkExamples",
             ]
         ),
     ],
