@@ -16,49 +16,26 @@ public class ClockworkSpacetime
     {
     }
 
-    public func generate(sources: String, output: String) throws
+    public func generate(source: String, interactionsOutput: String, moduleOutput: String, universeOutput: String) throws
     {
-        guard File.isDirectory(sources) else
+        let sourceURL = URL(fileURLWithPath: source)
+        let source = try String(contentsOf: sourceURL)
+        let className = try self.findClassName(source)
+
+        let functions = try self.findFunctions(source)
+
+        guard functions.count > 0 else
         {
-            throw ClockworkSpacetimeError.sourcesDirectoryDoesNotExist
+            return
         }
 
-        let outputURL = URL(fileURLWithPath: output)
-        if !File.exists(output)
-        {
-            guard File.makeDirectory(url: outputURL) else
-            {
-                throw ClockworkSpacetimeError.noOutputDirectory
-            }
-        }
+        let interactionsURL = URL(fileURLWithPath: interactionsOutput)
+        let moduleURL = URL(fileURLWithPath: moduleOutput)
+        let universeURL = URL(fileURLWithPath: universeOutput)
 
-        let sourceURL = URL(fileURLWithPath: sources)
-        let files = File.findFiles(sourceURL, pattern: "*.swift")
-        let _ = files.map { self.generate($0, outputURL) }
-    }
-
-    public func generate(_ input: URL, _ outputURL: URL)
-    {
-        do
-        {
-            let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
-
-            let functions = try self.findFunctions(source)
-
-            guard functions.count > 0 else
-            {
-                return
-            }
-
-            try self.generateInteractions(outputURL, className, functions)
-            try self.generateUniverseExtension(outputURL, className, functions)
-            try self.generateModule(outputURL, className, functions)
-        }
-        catch
-        {
-            print(error)
-        }
+        try self.generateInteractions(interactionsURL, className, functions)
+        try self.generateUniverseExtension(moduleURL, className, functions)
+        try self.generateModule(universeURL, className, functions)
     }
 
     func findClassName(_ source: String) throws -> String

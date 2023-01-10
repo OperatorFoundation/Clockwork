@@ -16,17 +16,23 @@ struct CommandLine: ParsableCommand
 {
     static let configuration = CommandConfiguration(commandName: "clockwork")
 
-    @Argument(help: "directory in which to find the .swift source files")
-    var sources: String
+    @Argument(help: "path to the module logic .swift source files")
+    var source: String
 
-    @Argument(help: "directory to output generated files")
-    var output: String
+    @Argument(help: "directory to output interactions")
+    var interactionsOutput: String
+
+    @Argument(help: "directory to output Module")
+    var moduleOutput: String
+
+    @Argument(help: "directory to output Universe extension")
+    var universeOutput: String
 
     mutating public func run() throws
     {
-        print("Clockwork \(sources) \(output)")
+        print("Clockwork \(source) \(interactionsOutput) \(moduleOutput) \(universeOutput)")
         let clockwork = ClockworkSpacetime()
-        try clockwork.generate(sources: sources, output: output)
+        try clockwork.generate(source: source, interactionsOutput: interactionsOutput, moduleOutput: moduleOutput, universeOutput: universeOutput)
     }
 }
 

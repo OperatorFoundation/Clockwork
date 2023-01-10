@@ -16,13 +16,8 @@ public class Clockwork
     {
     }
 
-    public func generate(sources: String, output: String) throws
+    public func generate(source: String, output: String) throws
     {
-        guard File.isDirectory(sources) else
-        {
-            throw ClockworkError.sourcesDirectoryDoesNotExist
-        }
-
         let outputURL = URL(fileURLWithPath: output)
         if !File.exists(output)
         {
@@ -32,9 +27,8 @@ public class Clockwork
             }
         }
 
-        let sourceURL = URL(fileURLWithPath: sources)
-        let files = File.findFiles(sourceURL, pattern: "**/*.swift")
-        let _ = files.map { self.generate($0, outputURL) }
+        let sourceURL = URL(fileURLWithPath: source)
+        self.generate(sourceURL, outputURL)
     }
 
     public func generate(_ input: URL, _ outputURL: URL)
