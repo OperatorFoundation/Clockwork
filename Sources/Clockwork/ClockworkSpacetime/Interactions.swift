@@ -34,7 +34,7 @@ extension ClockworkSpacetime
 
     func generateInteractions(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Interactions...")
+        print("Generating \(outputURL)...")
 
         let outputFile = outputURL.appending(component: "\(className)Interactions.swift")
         let result = try self.generateInteractionsSource(className, functions)
@@ -206,7 +206,7 @@ extension ClockworkSpacetime
             event = """
             public class \(className)\(function.name.capitalized)Response: \(className)Event
             {
-                let result: \(returnType)
+                public let result: \(returnType)
 
                 enum CodingKeys: String, CodingKey
                 {
@@ -310,7 +310,7 @@ extension ClockworkSpacetime
 
     func generateStructField(_ parameter: FunctionParameter) -> String
     {
-        return "    let \(parameter.name): \(parameter.type)"
+        return "    public let \(parameter.name): \(parameter.type)"
     }
 
     func generateEffectDecoders(_ function: Function) -> String

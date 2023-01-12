@@ -606,7 +606,7 @@ public class Clockwork
 
     func generateStructField(_ parameter: FunctionParameter) -> String
     {
-        return "    let \(parameter.name): \(parameter.type)"
+        return "    public let \(parameter.name): \(parameter.type)"
     }
 
     func generateParameter(_ parameter: FunctionParameter) -> String

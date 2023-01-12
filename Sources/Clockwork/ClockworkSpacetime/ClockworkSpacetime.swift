@@ -34,8 +34,8 @@ public class ClockworkSpacetime
         let universeURL = URL(fileURLWithPath: universeOutput)
 
         try self.generateInteractions(interactionsURL, className, functions)
-        try self.generateUniverseExtension(moduleURL, className, functions)
-        try self.generateModule(universeURL, className, functions)
+        try self.generateUniverseExtension(universeURL, className, functions)
+        try self.generateModule(moduleURL, className, functions)
     }
 
     func findClassName(_ source: String) throws -> String
@@ -59,7 +59,7 @@ public class ClockworkSpacetime
 
     func findFunctions(_ source: String) throws -> [Function]
     {
-        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9]+)?")
+        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9]+[?]?)?")
         let results = source.ranges(of: regex).map
         {
             range in

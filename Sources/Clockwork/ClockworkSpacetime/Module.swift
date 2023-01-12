@@ -34,7 +34,7 @@ extension ClockworkSpacetime
 
     func generateModule(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Module...")
+        print("Generating \(outputURL.path)...")
 
         let outputFile = outputURL.appending(component: "\(className)Module.swift")
         let result = try self.generateModuleSource(className, functions)
