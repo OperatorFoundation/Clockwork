@@ -10,10 +10,11 @@ import Foundation
 
 import Gardener
 
-public class Clockwork
+public class Clockwork: ClockworkBase
 {
-    public init()
+    public override init()
     {
+        super.init()
     }
 
     public func generate(source: String, output: String) throws
@@ -122,122 +123,6 @@ public class Clockwork
         {
             print(error)
         }
-    }
-
-    func findClassName(_ source: String) throws -> String
-    {
-        let regex = try Regex("class [A-Za-z0-9]+")
-        let ranges = source.ranges(of: regex)
-        guard ranges.count == 1 else
-        {
-            if ranges.count == 0
-            {
-                throw ClockworkError.noMatches
-            }
-            else
-            {
-                throw ClockworkError.tooManyMatches
-            }
-        }
-
-        return String(source[ranges[0]].split(separator: " ")[1])
-    }
-
-    func findFunctions(_ source: String) throws -> [Function]
-    {
-        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9]+)?")
-        let results = source.ranges(of: regex).map
-        {
-            range in
-
-            let substrings = source[range].split(separator: " ")[2...]
-            let strings = substrings.map { String($0) }
-            return strings.joined(separator: " ")
-        }
-
-        return results.compactMap
-        {
-            function in
-
-            do
-            {
-                let name = try self.findFunctionName(function)
-                let parameters = try self.findParameters(function)
-                let returnType = try self.findFunctionReturnType(function)
-                let throwing = try self.findFunctionThrowing(function)
-                return Function(name: name, parameters: parameters, returnType: returnType, throwing: throwing)
-            }
-            catch
-            {
-                return nil
-            }
-        }
-    }
-
-    func findFunctionName(_ function: String) throws -> String
-    {
-        return String(function.split(separator: "(")[0])
-    }
-
-    func findParameters(_ function: String) throws -> [FunctionParameter]
-    {
-        guard function.firstIndex(of: "@") == nil else
-        {
-            throw ClockworkError.badFunctionFormat
-        }
-
-        guard function.firstIndex(of: "_") == nil else
-        {
-            throw ClockworkError.badFunctionFormat
-        }
-
-        guard let parameterStart = function.firstIndex(of: "(") else
-        {
-            throw ClockworkError.badFunctionFormat
-        }
-
-        guard let parameterEnd = function.firstIndex(of: ")") else
-        {
-            throw ClockworkError.badFunctionFormat
-        }
-
-        if function.index(after: parameterStart) == parameterEnd
-        {
-            return []
-        }
-
-        let suffix = String(function.split(separator: "(")[1])
-        let prefix = String(suffix.split(separator: ")")[0])
-        let parts = prefix.split(separator: ", ").map { String($0) }
-        return try parts.map
-        {
-            part in
-
-            let subparts = part.split(separator: ": ")
-            guard subparts.count == 2 else
-            {
-                throw ClockworkError.badFunctionFormat
-            }
-
-            let name = String(subparts[0])
-            let type = String(subparts[1])
-            return FunctionParameter(name: name, type: type)
-        }
-    }
-
-    func findFunctionReturnType(_ function: String) throws -> String?
-    {
-        guard function.firstIndex(of: "-") != nil else
-        {
-            return nil
-        }
-
-        return String(function.split(separator: "-> ")[1])
-    }
-
-    func findFunctionThrowing(_ function: String) throws -> Bool
-    {
-        return function.split(separator: " throws ").count == 2
     }
 
     func generateMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
@@ -465,7 +350,23 @@ public class Clockwork
         {
             if function.returnType == nil
             {
-                return """
+                if function.throwing
+                {
+                    return """
+                                    case .\(function.name):
+                                        self.handler.\(function.name)()
+                                        let response = try \(className)Response.\(function.name)
+                                        let encoder = JSONEncoder()
+                                        let responseData = try encoder.encode(response)
+                                        guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
+                """
+                }
+                else
+                {
+                    return """
                                     case .\(function.name):
                                         self.handler.\(function.name)()
                                         let response = \(className)Response.\(function.name)
@@ -476,10 +377,27 @@ public class Clockwork
                                             throw \(className)ServerError.writeFailed
                                         }
                 """
+                }
             }
             else
             {
-                return """
+                if function.throwing
+                {
+                    return """
+                                    case .\(function.name):
+                                        let result = self.handler.\(function.name)()
+                                        let response = try \(className)Response.\(function.name)(result)
+                                        let encoder = JSONEncoder()
+                                        let responseData = try encoder.encode(response)
+                                        guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
+                """
+                }
+                else
+                {
+                    return """
                                     case .\(function.name):
                                         let result = self.handler.\(function.name)()
                                         let response = \(className)Response.\(function.name)(result)
@@ -490,6 +408,7 @@ public class Clockwork
                                             throw \(className)ServerError.writeFailed
                                         }
                 """
+                }
             }
         }
         else
@@ -499,7 +418,23 @@ public class Clockwork
 
             if function.returnType == nil
             {
-                return """
+                if function.throwing
+                {
+                    return """
+                                    case .\(function.name)(let value):
+                                        self.handler.\(function.name)(\(argumentList))
+                                        let response = try \(className)Response.\(function.name)
+                                        let encoder = JSONEncoder()
+                                        let responseData = try encoder.encode(response)
+                                        guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
+                """
+                }
+                else
+                {
+                    return """
                                     case .\(function.name)(let value):
                                         self.handler.\(function.name)(\(argumentList))
                                         let response = \(className)Response.\(function.name)
@@ -510,10 +445,27 @@ public class Clockwork
                                             throw \(className)ServerError.writeFailed
                                         }
                 """
+                }
             }
             else
             {
-                return """
+                if function.throwing
+                {
+                    return """
+                                    case .\(function.name)(let value):
+                                        let result = self.handler.\(function.name)(\(argumentList))
+                                        let response = try \(className)Response.\(function.name)(result)
+                                        let encoder = JSONEncoder()
+                                        let responseData = try encoder.encode(response)
+                                        guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
+                """
+                }
+                else
+                {
+                    return """
                                     case .\(function.name)(let value):
                                         let result = self.handler.\(function.name)(\(argumentList))
                                         let response = \(className)Response.\(function.name)(result)
@@ -524,6 +476,7 @@ public class Clockwork
                                             throw \(className)ServerError.writeFailed
                                         }
                 """
+                }
             }
         }
     }

@@ -127,7 +127,7 @@ extension ClockworkSpacetime
         if function.parameters.isEmpty
         {
             effect = """
-            public class \(className)\(function.name.capitalized)Request: \(className)Effect
+            public class \(className)\(function.name.capitalizingFirstLetter())Request: \(className)Effect
             {
                 enum CodingKeys: String, CodingKey
                 {
@@ -163,7 +163,7 @@ extension ClockworkSpacetime
             let effectDecoders = self.generateEffectDecoders(function)
 
             effect = """
-            public class \(className)\(function.name.capitalized)Request: \(className)Effect
+            public class \(className)\(function.name.capitalizingFirstLetter())Request: \(className)Effect
             {
             \(effectFields)
 
@@ -204,7 +204,7 @@ extension ClockworkSpacetime
         if let returnType = function.returnType
         {
             event = """
-            public class \(className)\(function.name.capitalized)Response: \(className)Event
+            public class \(className)\(function.name.capitalizingFirstLetter())Response: \(className)Event
             {
                 public let result: \(returnType)
 
@@ -236,7 +236,7 @@ extension ClockworkSpacetime
         else
         {
             event = """
-            public class \(className)\(function.name.capitalized)Response: \(className)Event
+            public class \(className)\(function.name.capitalizingFirstLetter())Response: \(className)Event
             {
                 enum CodingKeys: String, CodingKey
                 {

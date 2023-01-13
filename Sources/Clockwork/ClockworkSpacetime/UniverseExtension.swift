@@ -126,21 +126,21 @@ extension ClockworkSpacetime
         if function.returnType == nil
         {
             returnHandler = """
-                        case is \(className)\(function.name.capitalized)Response:
+                        case is \(className)\(function.name.capitalizingFirstLetter())Response:
                             return
             """
         }
         else
         {
             returnHandler = """
-                        case let response as \(className)\(function.name.capitalized)Response:
+                        case let response as \(className)\(function.name.capitalizingFirstLetter())Response:
                             return response.result
             """
         }
 
         return """
             {
-                let request = \(className)\(function.name.capitalized)Request(\(argumentSource))
+                let request = \(className)\(function.name.capitalizingFirstLetter())Request(\(argumentSource))
                 let result = self.processEffect(request)
 
                 switch result

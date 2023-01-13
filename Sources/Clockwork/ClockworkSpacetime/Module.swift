@@ -96,14 +96,23 @@ extension ClockworkSpacetime
 
             public func handleEffect(_ effect: Effect, _ channel: BlockingQueue<Event>) -> Event?
             {
-                switch effect
+                do
                 {
+                    switch effect
+                    {
         \(cases)
-
-                    default:
-                        let response = Failure(effect.id)
-                        print(response.description)
-                        return response
+                        default:
+                            let response = Failure(effect.id)
+                            print(response.description)
+                            return response
+                    }
+                }
+                catch
+                {
+                    print(error)
+                    let response = Failure(effect.id)
+                    print(response.description)
+                    return response
                 }
             }
 
@@ -127,23 +136,49 @@ extension ClockworkSpacetime
         {
             if function.returnType == nil
             {
-                return """
-                            case let request as \(className)\(function.name.capitalized)Request:
-                                self.handler.\(function.name)()
-                                let response = \(className)\(function.name.capitalized)Response(request.id)
-                                print(response.description)
-                                return response
+                if function.throwing
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    try self.handler.\(function.name)()
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id)
+                                    print(response.description)
+                                    return response
                 """
+                }
+                else
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    self.handler.\(function.name)()
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id)
+                                    print(response.description)
+                                    return response
+                """
+                }
             }
             else
             {
-                return """
-                            case let request as \(className)\(function.name.capitalized)Request:
-                                let result = self.handler.\(function.name)()
-                                let response = \(className)\(function.name.capitalized)Response(request.id, result)
-                                print(response.description)
-                                return response
+                if function.throwing
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    let result = try self.handler.\(function.name)()
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id, result)
+                                    print(response.description)
+                                    return response
                 """
+                }
+                else
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    let result = self.handler.\(function.name)()
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id, result)
+                                    print(response.description)
+                                    return response
+                """
+                }
             }
         }
         else
@@ -153,23 +188,49 @@ extension ClockworkSpacetime
 
             if function.returnType == nil
             {
-                return """
-                            case let request as \(className)\(function.name.capitalized)Request:
-                                self.handler.\(function.name)(\(argumentList))
-                                let response = \(className)\(function.name.capitalized)Response(request.id)
-                                print(response.description)
-                                return response
+                if function.throwing
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    try self.handler.\(function.name)(\(argumentList))
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id)
+                                    print(response.description)
+                                    return response
                 """
+                }
+                else
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    self.handler.\(function.name)(\(argumentList))
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id)
+                                    print(response.description)
+                                    return response
+                """
+                }
             }
             else
             {
-                return """
-                            case let request as \(className)\(function.name.capitalized)Request:
-                                let result = self.handler.\(function.name)(\(argumentList))
-                                let response = \(className)\(function.name.capitalized)Response(request.id, result)
-                                print(response.description)
-                                return response
+                if function.throwing
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    let result = try self.handler.\(function.name)(\(argumentList))
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id, result)
+                                    print(response.description)
+                                    return response
                 """
+                }
+                else
+                {
+                    return """
+                                case let request as \(className)\(function.name.capitalizingFirstLetter())Request:
+                                    let result = self.handler.\(function.name)(\(argumentList))
+                                    let response = \(className)\(function.name.capitalizingFirstLetter())Response(request.id, result)
+                                    print(response.description)
+                                    return response
+                """
+                }
             }
         }
     }
