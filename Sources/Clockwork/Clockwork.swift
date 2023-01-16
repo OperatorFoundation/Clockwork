@@ -354,7 +354,7 @@ public class Clockwork: ClockworkBase
                 {
                     return """
                                     case .\(function.name):
-                                        self.handler.\(function.name)()
+                                        try self.handler.\(function.name)()
                                         let response = try \(className)Response.\(function.name)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
@@ -385,8 +385,8 @@ public class Clockwork: ClockworkBase
                 {
                     return """
                                     case .\(function.name):
-                                        let result = self.handler.\(function.name)()
-                                        let response = try \(className)Response.\(function.name)(result)
+                                        let result = try self.handler.\(function.name)()
+                                        let response = \(className)Response.\(function.name)(result)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
@@ -422,8 +422,8 @@ public class Clockwork: ClockworkBase
                 {
                     return """
                                     case .\(function.name)(let value):
-                                        self.handler.\(function.name)(\(argumentList))
-                                        let response = try \(className)Response.\(function.name)
+                                        try self.handler.\(function.name)(\(argumentList))
+                                        let response = \(className)Response.\(function.name)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
@@ -453,7 +453,7 @@ public class Clockwork: ClockworkBase
                 {
                     return """
                                     case .\(function.name)(let value):
-                                        let result = self.handler.\(function.name)(\(argumentList))
+                                        let result = try self.handler.\(function.name)(\(argumentList))
                                         let response = try \(className)Response.\(function.name)(result)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)

@@ -34,7 +34,7 @@ public class ClockworkBase
 
     public func findFunctions(_ source: String) throws -> [Function]
     {
-        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9\\[\\]]+[?]?)?")
+        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9\\[\\]<>]+[?]?)?")
         let results = source.ranges(of: regex).map
         {
             range in
