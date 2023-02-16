@@ -229,7 +229,7 @@ public class ClockworkKotlin: ClockworkBase
     {
         if let returnType = function.returnType
         {
-            return "    @Serializable data class \(function.name.capitalized)Response(val \(returnType)) : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(returnType)) : \(className.capitalized)Response()"
         }
         else
         {
@@ -316,7 +316,7 @@ public class ClockworkKotlin: ClockworkBase
         {
             returnHandler = """
                         is \(className)Response.\(function.name.capitalized)Response:
-                            return value
+                            return response.value
             """
         }
 
