@@ -496,11 +496,11 @@ public class Clockwork: ClockworkBase
     {
         if function.parameters.isEmpty
         {
-            return "    case \(function.name)"
+            return "    case \(function.name.capitalized)Request"
         }
         else
         {
-            return "    case \(function.name)(\(function.name.capitalized))"
+            return "    case \(function.name.capitalized)Request(\(function.name.capitalized))"
         }
     }
 
@@ -514,11 +514,11 @@ public class Clockwork: ClockworkBase
     {
         if let returnType = function.returnType
         {
-            return "    case \(function.name)(\(returnType))"
+            return "    case \(function.name.capitalized)Response(\(returnType))"
         }
         else
         {
-            return "    case \(function.name)"
+            return "    case \(function.name.capitalized)Response"
         }
     }
 
@@ -679,20 +679,6 @@ public class Clockwork: ClockworkBase
         return "\(argument.name): \(argument.name)"
     }
 
-}
-
-public struct Function
-{
-    let name: String
-    let parameters: [FunctionParameter]
-    let returnType: String?
-    let throwing: Bool
-}
-
-public struct FunctionParameter
-{
-    let name: String
-    let type: String
 }
 
 public enum ClockworkError: Error

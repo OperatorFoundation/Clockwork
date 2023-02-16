@@ -22,11 +22,23 @@ struct CommandLine: ParsableCommand
     @Argument(help: "directory to output generated files")
     var output: String
 
+    @Flag(help: "output Kotlin files instead of Swift")
+    var kotlin: Bool = false
+
     mutating public func run() throws
     {
-        print("Clockwork \(source) \(output)")
-        let clockwork = Clockwork()
-        try clockwork.generate(source: source, output: output)
+        if kotlin
+        {
+            print("ClockworkKotlin \(source) \(output)")
+            let clockwork = ClockworkKotlin()
+            try clockwork.generate(source: source, output: output)
+        }
+        else
+        {
+            print("Clockwork \(source) \(output)")
+            let clockwork = Clockwork()
+            try clockwork.generate(source: source, output: output)
+        }
     }
 }
 

@@ -136,5 +136,18 @@ public class ClockworkBase
 
         return function.split(separator: " throws ").count == 2
     }
+}
 
+public struct Function
+{
+    let name: String
+    let parameters: [FunctionParameter]
+    let returnType: String?
+    let throwing: Bool
+}
+
+public struct FunctionParameter
+{
+    let name: String
+    let type: String
 }
