@@ -18,6 +18,11 @@ public class Example
         self.count = self.count + 1
     }
 
+    public func arrayCheck(array: [String]) -> [String]
+    {
+        return array
+    }
+
     public func add(addition: Int)
     {
         self.count = self.count + addition

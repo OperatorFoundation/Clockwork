@@ -229,7 +229,7 @@ public class ClockworkKotlin: ClockworkBase
     {
         if let returnType = function.returnType
         {
-            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(returnType)) : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType)) : \(className.capitalized)Response()"
         }
         else
         {
@@ -245,17 +245,12 @@ public class ClockworkKotlin: ClockworkBase
 
     func generateRequestParameter(_ parameter: FunctionParameter) -> String
     {
-        return "val \(parameter.name): \(parameter.type)"
+        return "val \(parameter.name): \(kotlinizeType(parameter.type))"
     }
 
     func generateParameter(_ parameter: FunctionParameter) -> String
     {
-        return "\(parameter.name): \(parameter.type)"
-    }
-
-    func generateInit(_ parameter: FunctionParameter) -> String
-    {
-        return "        self.\(parameter.name) = \(parameter.name)"
+        return "\(parameter.name): \(kotlinizeType(parameter.type))"
     }
 
     func generateFunctions(_ className: String, _ functions: [Function]) throws -> String
@@ -282,7 +277,7 @@ public class ClockworkKotlin: ClockworkBase
 
         if let returnType = function.returnType
         {
-            return "    fun \(function.name)(\(parameterList)) : \(returnType)"
+            return "    fun \(function.name)(\(parameterList)) : \(kotlinizeType(returnType))"
         }
         else
         {
@@ -380,6 +375,22 @@ public class ClockworkKotlin: ClockworkBase
         let outputFile = outputURL.appending(component: "\(className)Client.kt")
         let result = try self.generateClientText(className, functions)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
+    }
+
+    func kotlinizeType(_ type: String) -> String
+    {
+        if type[type.startIndex] == "["
+        {
+            let start = type.index(after: type.startIndex)
+            let end = type.index(before: type.endIndex)
+
+            let innerType = type[start..<end]
+            return "Array<\(innerType)>"
+        }
+        else
+        {
+            return type
+        }
     }
 }
 
