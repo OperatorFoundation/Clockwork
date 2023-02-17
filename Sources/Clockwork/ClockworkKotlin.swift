@@ -303,15 +303,13 @@ public class ClockworkKotlin: ClockworkBase
         if function.returnType == nil
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response:
-                            return
+                        is \(className)Response.\(function.name.capitalized)Response -> return
             """
         }
         else
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response:
-                            return response.value
+                        is \(className)Response.\(function.name.capitalized)Response -> return response.value
             """
         }
 
