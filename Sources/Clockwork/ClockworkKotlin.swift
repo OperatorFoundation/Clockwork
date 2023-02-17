@@ -229,7 +229,7 @@ public class ClockworkKotlin: ClockworkBase
     {
         if let returnType = function.returnType
         {
-            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType)) : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType))) : \(className.capitalized)Response()"
         }
         else
         {
@@ -320,7 +320,7 @@ public class ClockworkKotlin: ClockworkBase
         {
             defaultHandler = """
                         default:
-                            throw \(className)ClientErrorBadReturnTypeException()
+                            throw \(className)BadReturnTypeException()
             """
         }
         else
@@ -334,13 +334,13 @@ public class ClockworkKotlin: ClockworkBase
                 val data = Json.encodeToString(message).toByteArray()
                 if (!this.connection.writeWithLengthPrefix(data, 64))
                 {
-                    throw \(className)ClientErrorWriteFailedException()
+                    throw \(className)WriteFailedException()
                 }
 
                 val responseData = this.connection.readWithLengthPrefix(64)
                 if (responseData == null)
                 {
-                    throw \(className)ClientErrorReadFailedException()
+                    throw \(className)ReadFailedException()
                 }
 
                 val response = Json.decodeFromString<\(className)Request>(responseData.decodeToString())
