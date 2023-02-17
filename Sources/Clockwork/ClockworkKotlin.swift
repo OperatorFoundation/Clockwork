@@ -319,8 +319,7 @@ public class ClockworkKotlin: ClockworkBase
         if includeDefault
         {
             defaultHandler = """
-                        default:
-                            throw \(className)BadReturnTypeException()
+                        else -> throw \(className)BadReturnTypeException()
             """
         }
         else
@@ -343,7 +342,7 @@ public class ClockworkKotlin: ClockworkBase
                     throw \(className)ReadFailedException()
                 }
 
-                val response = Json.decodeFromString<\(className)Request>(responseData.decodeToString())
+                val response = Json.decodeFromString<\(className)Response>(responseData.decodeToString())
                 when (response)
                 {
         \(returnHandler)
