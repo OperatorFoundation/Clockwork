@@ -228,7 +228,7 @@ public class ClockworkKotlin: ClockworkBase
     {
         if let returnType = function.returnType
         {
-            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType)) : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType))) : \(className.capitalized)Response()"
         }
         else
         {
@@ -302,15 +302,13 @@ public class ClockworkKotlin: ClockworkBase
         if function.returnType == nil
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response:
-                            return
+                        is \(className)Response.\(function.name.capitalized)Response -> return
             """
         }
         else
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response:
-                            return response.value
+                        is \(className)Response.\(function.name.capitalized)Response -> return response.value
             """
         }
 
@@ -318,8 +316,7 @@ public class ClockworkKotlin: ClockworkBase
         if includeDefault
         {
             defaultHandler = """
-                        default:
-                            throw \(className)ClientErrorBadReturnTypeException()
+                        else -> throw \(className)BadReturnTypeException()
             """
         }
         else
@@ -333,16 +330,16 @@ public class ClockworkKotlin: ClockworkBase
                 val data = Json.encodeToString(message).toByteArray()
                 if (!this.connection.writeWithLengthPrefix(data, 64))
                 {
-                    throw \(className)ClientErrorWriteFailedException()
+                    throw \(className)WriteFailedException()
                 }
 
                 val responseData = this.connection.readWithLengthPrefix(64)
                 if (responseData == null)
                 {
-                    throw \(className)ClientErrorReadFailedException()
+                    throw \(className)ReadFailedException()
                 }
 
-                val response = Json.decodeFromString<\(className)Request>(responseData.decodeToString())
+                val response = Json.decodeFromString<\(className)Response>(responseData.decodeToString())
                 when (response)
                 {
         \(returnHandler)
