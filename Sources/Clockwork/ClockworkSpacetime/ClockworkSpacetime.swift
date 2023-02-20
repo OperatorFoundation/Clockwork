@@ -10,20 +10,22 @@ import Foundation
 
 import Gardener
 
-public class ClockworkSpacetime: ClockworkBase
+public class ClockworkSpacetime
 {
-    public override init()
+    let parser: any Parser
+
+    public init(parser: any Parser)
     {
-        super.init()
+        self.parser = parser
     }
 
     public func generate(source: String, interactionsOutput: String, moduleOutput: String, universeOutput: String) throws
     {
         let sourceURL = URL(fileURLWithPath: source)
         let source = try String(contentsOf: sourceURL)
-        let className = try self.findClassName(source)
+        let className = try self.parser.findClassName(source)
 
-        let functions = try self.findFunctions(source)
+        let functions = try self.parser.findFunctions(source)
 
         guard functions.count > 0 else
         {

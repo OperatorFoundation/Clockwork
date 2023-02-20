@@ -14,9 +14,9 @@ extension ClockworkSpacetime
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
+            let className = try self.parser.findClassName(source)
 
-            let functions = try self.findFunctions(source)
+            let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
             {

@@ -1,19 +1,19 @@
 //
 //  ClockworkBase.swift
-//  
 //
-//  Created by Dr. Brandon Wiley on 1/12/23.
+//
+//  Created by Dr. Brandon Wiley on 2/19/23.
 //
 
 import Foundation
 
-public class ClockworkBase
+public class PythonParser: Parser
 {
-    public init()
+    public required init()
     {
     }
 
-    func findClassName(_ source: String) throws -> String
+    public func findClassName(_ source: String) throws -> String
     {
         let regex = try Regex("class [A-Za-z0-9]+")
         let ranges = source.ranges(of: regex)
@@ -34,17 +34,25 @@ public class ClockworkBase
 
     public func findFunctions(_ source: String) throws -> [Function]
     {
-        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9\\[\\]<>]+[?]?)?")
-        let results = source.ranges(of: regex).map
+        let regex = try Regex("^[ \\t]*def [^_][^\\(]+([^\\)]).*:$")
+        let lines = source.components(separatedBy: "\n").map { String($0) }
+        let goodLines = lines.filter
         {
-            range in
+            line in
 
-            let substrings = source[range].split(separator: " ")[2...]
-            let strings = substrings.map { String($0) }
-            return strings.joined(separator: " ")
+            let range = line.ranges(of: regex)
+            return range.count > 0
         }
 
-        return results.compactMap
+        let goodParts = goodLines.map
+        {
+            goodLine in
+
+            let parts = goodLine.components(separatedBy: " def ")
+            return parts[1]
+        }
+
+        return goodParts.compactMap
         {
             function in
 
@@ -98,9 +106,14 @@ public class ClockworkBase
         let suffix = String(function.split(separator: "(")[1])
         let prefix = String(suffix.split(separator: ")")[0])
         let parts = prefix.split(separator: ", ").map { String($0) }
-        return try parts.map
+        return try parts.compactMap
         {
             part in
+
+            guard part != "self" else
+            {
+                return nil
+            }
 
             let subparts = part.split(separator: ": ")
             guard subparts.count == 2 else
@@ -126,28 +139,6 @@ public class ClockworkBase
 
     public func findFunctionThrowing(_ function: String) throws -> Bool
     {
-        if let last = function.split(separator: " ").last
-        {
-            if last == "throws"
-            {
-                return true
-            }
-        }
-
-        return function.split(separator: " throws ").count == 2
+        return true
     }
-}
-
-public struct Function
-{
-    let name: String
-    let parameters: [FunctionParameter]
-    let returnType: String?
-    let throwing: Bool
-}
-
-public struct FunctionParameter
-{
-    let name: String
-    let type: String
 }

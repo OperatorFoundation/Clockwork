@@ -10,11 +10,13 @@ import Foundation
 
 import Gardener
 
-public class ClockworkPython: ClockworkBase
+public class ClockworkPython
 {
-    public override init()
+    let parser: any Parser
+
+    public init(parser: any Parser)
     {
-        super.init()
+        self.parser = parser
     }
 
     public func generate(source: String, output: String) throws
@@ -37,9 +39,9 @@ public class ClockworkPython: ClockworkBase
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
+            let className = try self.parser.findClassName(source)
 
-            let functions = try self.findFunctions(source)
+            let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
             {
@@ -48,6 +50,7 @@ public class ClockworkPython: ClockworkBase
 
             try self.generateMessages(outputURL, className, functions)
             try self.generateClient(outputURL, className, functions)
+            try self.generateServer(outputURL, className, functions)
         }
         catch
         {
@@ -60,9 +63,9 @@ public class ClockworkPython: ClockworkBase
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
+            let className = try self.parser.findClassName(source)
 
-            let functions = try self.findFunctions(source)
+            let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
             {
@@ -83,9 +86,9 @@ public class ClockworkPython: ClockworkBase
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
+            let className = try self.parser.findClassName(source)
 
-            let functions = try self.findFunctions(source)
+            let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
             {
@@ -94,6 +97,29 @@ public class ClockworkPython: ClockworkBase
 
             let outputFile = output.appending(component: "\(className)Client.py")
             try self.generateClient(outputFile, className, functions)
+        }
+        catch
+        {
+            print(error)
+        }
+    }
+
+    public func generateServer(_ input: URL, _ output: URL)
+    {
+        do
+        {
+            let source = try String(contentsOf: input)
+            let className = try self.parser.findClassName(source)
+
+            let functions = try self.parser.findFunctions(source)
+
+            guard functions.count > 0 else
+            {
+                return
+            }
+
+            let outputFile = output.appending(component: "\(className)Server.py")
+            try self.generateServer(outputFile, className, functions)
         }
         catch
         {
@@ -116,6 +142,15 @@ public class ClockworkPython: ClockworkBase
 
         let outputFile = outputURL.appending(component: "\(className)Client.py")
         let result = try self.generateClientText(className, functions)
+        try result.write(to: outputFile, atomically: true, encoding: .utf8)
+    }
+
+    func generateServer(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    {
+        print("Generating \(className)Server...")
+
+        let outputFile = outputURL.appending(component: "\(className)Server.py")
+        let result = try self.generateServerText(className, functions)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
@@ -180,6 +215,52 @@ public class ClockworkPython: ClockworkBase
         """
     }
 
+    func generateServerText(_ className: String, _ functions: [Function]) throws -> String
+    {
+        let date = Date() // now
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+
+        let dateString = formatter.string(from: date)
+
+        let cases = self.generateServerCases(className, functions)
+
+        return """
+        #
+        #  \(className)Server.py
+        #
+        #
+        #  Created by Clockwork on \(dateString).
+        #
+
+        class \(className)Server:
+            def __init__(self, listener, handler):
+                self.listener = listener
+                self.handler = handler
+
+                self.accept()
+
+            def shutdown(self):
+                pass
+
+            def accept(self):
+                connection = self.listener.accept()
+                self.handleConnection(connection)
+
+            def handleConnection(self, connection):
+                try:
+                    request = connection.read(\(className)Response)
+                    if not request:
+                        raise Exception("request read failed")
+
+        \(cases)
+                except Exception as e:
+                    print(e)
+                    return
+        """
+    }
+
     func generateRequestEnumsText(_ className: String, _ functions: [Function]) -> String
     {
         let enums = functions.map { self.generateRequestEnumCase(className, $0) }
@@ -205,6 +286,114 @@ public class ClockworkPython: ClockworkBase
             \(inits)
             """
         }
+    }
+
+    func generateServerCases(_ className: String, _ functions: [Function]) -> String
+    {
+        let cases = functions.map { self.generateServerCase(className, $0) }
+        return cases.joined(separator: "\n\n")
+    }
+
+    func generateServerCase(_ className: String, _ function: Function) -> String
+    {
+        if function.parameters.isEmpty
+        {
+            if function.returnType == nil
+            {
+                if function.throwing
+                {
+                    return """
+                                if isinstance(request, \(className)\(function.name.capitalized)Request):
+                                    self.handler.\(function.name)()
+                                    response = \(className)\(function.name.capitalized)Response()
+                                    self.connection.write(response)
+                    """
+                }
+                else
+                {
+                    return """
+                                if isinstance(request, \(className)\(function.name.capitalized)Request):
+                                    self.handler.\(function.name)()
+                                    response = \(className)\(function.name.capitalized)Response()
+                                    self.connection.write(response)
+                    """
+                }
+            }
+            else
+            {
+                if function.throwing
+                {
+                    return """
+                                if isinstance(request, \(className)\(function.name.capitalized)Request):
+                                    result = self.handler.\(function.name)()
+                                    response = \(className)\(function.name.capitalized)Response(result)
+                                    self.connection.write(response)
+                    """
+                }
+                else
+                {
+                    return """
+                                if isinstance(request, \(className)\(function.name.capitalized)Request):
+                                    result = self.handler.\(function.name)()
+                                    response = \(className)\(function.name.capitalized)Response(result)
+                                    self.connection.write(response)
+                    """
+                }
+            }
+        }
+        else
+        {
+            let arguments = function.parameters.map { self.generateServerArgument($0) }
+            let argumentList = arguments.joined(separator: ", ")
+
+            if function.returnType == nil
+            {
+                if function.throwing
+                {
+                    return """
+                                if isinstance(request, \(function.name.capitalized)):
+                                    self.handler.\(function.name)(\(argumentList))
+                                    response = \(className)\(function.name.capitalized)Response()
+                                    self.connection.write(response)
+                    """
+                }
+                else
+                {
+                    return """
+                                if isinstance(request, \(function.name.capitalized)):
+                                    self.handler.\(function.name)(\(argumentList))
+                                    response = \(className)\(function.name.capitalized)Response()
+                                    self.connection.write(response)
+                    """
+                }
+            }
+            else
+            {
+                if function.throwing
+                {
+                    return """
+                                if isinstance(request, \(function.name.capitalized)):
+                                    result = self.handler.\(function.name)(\(argumentList))
+                                    response = \(className)\(function.name.capitalized)Response(result)
+                                    self.connection.write(response)
+                    """
+                }
+                else
+                {
+                    return """
+                                if isinstance(request, \(function.name.capitalized)):
+                                    result = self.handler.\(function.name)(\(argumentList))
+                                    response = \(className)\(function.name.capitalized)Response(result)
+                                    self.connection.write(response)
+                    """
+                }
+            }
+        }
+    }
+
+    func generateServerArgument(_ parameter: FunctionParameter) -> String
+    {
+        return "\(parameter.name)"
     }
 
     func generateInits(_ parameters: [FunctionParameter]) -> String

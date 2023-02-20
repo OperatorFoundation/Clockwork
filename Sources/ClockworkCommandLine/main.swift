@@ -30,25 +30,44 @@ struct CommandLine: ParsableCommand
 
     mutating public func run() throws
     {
+        let parser: any Parser
+        let sourceURL = URL(fileURLWithPath: source)
+        switch sourceURL.pathExtension
+        {
+            case "swift":
+                parser = SwiftParser()
+
+            case "py":
+                parser = PythonParser()
+
+            default:
+                throw ClockworkCommandLineError.noParser(sourceURL.pathExtension)
+        }
+
         if kotlin
         {
             print("ClockworkKotlin \(source) \(output)")
-            let clockwork = ClockworkKotlin()
+            let clockwork = ClockworkKotlin(parser: parser)
             try clockwork.generate(source: source, output: output)
         }
         else if python
         {
             print("ClockworkPython \(source) \(output)")
-            let clockwork = ClockworkPython()
+            let clockwork = ClockworkPython(parser: parser)
             try clockwork.generate(source: source, output: output)
         }
         else
         {
             print("Clockwork \(source) \(output)")
-            let clockwork = Clockwork()
+            let clockwork = SwiftGenerator(parser: parser)
             try clockwork.generate(source: source, output: output)
         }
     }
+}
+
+public enum ClockworkCommandLineError: Error
+{
+    case noParser(String)
 }
 
 CommandLine.main()

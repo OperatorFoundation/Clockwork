@@ -10,11 +10,13 @@ import Foundation
 
 import Gardener
 
-public class ClockworkKotlin: ClockworkBase
+public class ClockworkKotlin
 {
-    public override init()
+    let parser: any Parser
+
+    public init(parser: any Parser)
     {
-        super.init()
+        self.parser = parser
     }
 
     public func generate(source: String, output: String) throws
@@ -37,9 +39,9 @@ public class ClockworkKotlin: ClockworkBase
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
+            let className = try self.parser.findClassName(source)
 
-            let functions = try self.findFunctions(source)
+            let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
             {
@@ -60,9 +62,9 @@ public class ClockworkKotlin: ClockworkBase
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
+            let className = try self.parser.findClassName(source)
 
-            let functions = try self.findFunctions(source)
+            let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
             {
@@ -83,9 +85,9 @@ public class ClockworkKotlin: ClockworkBase
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.findClassName(source)
+            let className = try self.parser.findClassName(source)
 
-            let functions = try self.findFunctions(source)
+            let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
             {
