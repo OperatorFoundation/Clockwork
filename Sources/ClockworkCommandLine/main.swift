@@ -25,12 +25,21 @@ struct CommandLine: ParsableCommand
     @Flag(help: "output Kotlin files instead of Swift")
     var kotlin: Bool = false
 
+    @Flag(help: "output python files instead of Swift")
+    var python: Bool = false
+
     mutating public func run() throws
     {
         if kotlin
         {
             print("ClockworkKotlin \(source) \(output)")
             let clockwork = ClockworkKotlin()
+            try clockwork.generate(source: source, output: output)
+        }
+        else if python
+        {
+            print("ClockworkPython \(source) \(output)")
+            let clockwork = ClockworkPython()
             try clockwork.generate(source: source, output: output)
         }
         else

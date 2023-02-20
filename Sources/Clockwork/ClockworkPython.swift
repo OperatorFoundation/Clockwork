@@ -1,5 +1,5 @@
 //
-//  ClockworkKotlin.swift
+//  ClockworkPython.swift
 //
 //
 //  Created by Dr. Brandon Wiley on 2/15/23.
@@ -10,7 +10,7 @@ import Foundation
 
 import Gardener
 
-public class ClockworkKotlin: ClockworkBase
+public class ClockworkPython: ClockworkBase
 {
     public override init()
     {
@@ -69,7 +69,7 @@ public class ClockworkKotlin: ClockworkBase
                 return
             }
 
-            let outputFile = output.appending(component: "\(className)Messages.kt")
+            let outputFile = output.appending(component: "\(className)Messages.py")
             try self.generateMessages(outputFile, className, functions)
         }
         catch
@@ -92,7 +92,7 @@ public class ClockworkKotlin: ClockworkBase
                 return
             }
 
-            let outputFile = output.appending(component: "\(className)Client.kt")
+            let outputFile = output.appending(component: "\(className)Client.py")
             try self.generateClient(outputFile, className, functions)
         }
         catch
@@ -105,7 +105,7 @@ public class ClockworkKotlin: ClockworkBase
     {
         print("Generating \(className)Messages...")
 
-        let outputFile = outputURL.appending(component: "\(className)Messages.kt")
+        let outputFile = outputURL.appending(component: "\(className)Messages.py")
         let result = try self.generateRequestText(className, functions)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
@@ -114,7 +114,7 @@ public class ClockworkKotlin: ClockworkBase
     {
         print("Generating \(className)Client...")
 
-        let outputFile = outputURL.appending(component: "\(className)Client.kt")
+        let outputFile = outputURL.appending(component: "\(className)Client.py")
         let result = try self.generateClientText(className, functions)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
@@ -132,22 +132,22 @@ public class ClockworkKotlin: ClockworkBase
         let responseEnums = try self.generateResponseEnumsText(className, functions)
 
         return """
-        //
-        //  \(className)Messages.kt
-        //
-        //
-        //  Created by Clockwork on \(dateString).
-        //
+        #
+        #  \(className)Messages.py
+        #
+        #
+        #  Created by Clockwork on \(dateString).
+        #
 
-        import kotlinx.serialization.Serializable
+        class \(className)Request:
+            pass
 
-        sealed class \(className)Request {
         \(requestEnums)
-        }
 
-        sealed class \(className)Response {
+        class \(className)Response:
+            pass
+
         \(responseEnums)
-        }
         """
     }
 
@@ -163,76 +163,83 @@ public class ClockworkKotlin: ClockworkBase
         let functions = try self.generateFunctions(className, functions)
 
         return """
-        //
-        //  \(className)Client.kt
-        //
-        //
-        //  Created by Clockwork on \(dateString).
-        //
+        #
+        #  \(className)Client.py
+        #
+        #
+        #  Created by Clockwork on \(dateString).
+        #
 
-        import kotlinx.serialization.json.Json
-        import kotlinx.serialization.encodeToString
-        import kotlinx.serialization.decodeFromString
+        from transmission import Connection
 
-        import org.operatorfoundation.transmission.Connection
+        class \(className)Client:
+            def __init__(self, connection):
+                self.connection = connection
 
-        class \(className)Client(val connection: Connection)
-        {
         \(functions)
-        }
-
-        class \(className)ConnectionRefusedException(): Exception()
-        {
-        }
-
-        class \(className)WriteFailedException(): Exception()
-        {
-        }
-
-        class \(className)ReadFailedException(): Exception()
-        {
-        }
-
-        class \(className)BadReturnTypeException(): Exception()
-        {
-        }
         """
     }
 
     func generateRequestEnumsText(_ className: String, _ functions: [Function]) -> String
     {
         let enums = functions.map { self.generateRequestEnumCase(className, $0) }
-        return enums.joined(separator: "\n")
+        return enums.joined(separator: "\n\n")
     }
 
     func generateRequestEnumCase(_ className: String, _ function: Function) -> String
     {
         if function.parameters.isEmpty
         {
-            return "    @Serializable data class \(function.name.capitalized)Request() : \(className.capitalized)Request()"
+            return """
+            class \(function.name.capitalized)Request(\(className.capitalized)Request):
+                pass
+            """
         }
         else
         {
             let requestParameters = generateRequestParameters(function)
-            return "    @Serializable data class \(function.name.capitalized)Request(\(requestParameters)) : \(className.capitalized)Request()"
+            let inits = generateInits(function.parameters)
+            return """
+            class \(function.name.capitalized)Request(\(className.capitalized)Request):
+                def __init__(self, \(requestParameters)):
+            \(inits)
+            """
         }
+    }
+
+    func generateInits(_ parameters: [FunctionParameter]) -> String
+    {
+        let inits = parameters.map { self.generateInit($0) }
+        return inits.joined(separator: "\n")
+    }
+
+    func generateInit(_ parameter: FunctionParameter) -> String
+    {
+        return "        self.\(parameter.name) = \(parameter.name)"
     }
 
     func generateResponseEnumsText(_ className: String, _ functions: [Function]) throws -> String
     {
         let enums = try functions.map { try self.generateResponseEnumCase(className, $0) }
-        return enums.joined(separator: "\n")
+        return enums.joined(separator: "\n\n")
     }
 
     func generateResponseEnumCase(_ className: String, _ function: Function) throws -> String
     {
-        if let returnType = function.returnType
+        if function.returnType != nil
         {
-            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType)) : \(className.capitalized)Response()"
+            return """
+            class \(function.name.capitalized)Response(\(className.capitalized)Response):
+                def __init__(self, value):
+                    self.value = value
+            """
         }
         else
         {
-            return "    @Serializable data class \(function.name.capitalized)Response() : \(className.capitalized)Response()"
+            return """
+            class \(function.name.capitalized)Response(\(className.capitalized)Response):
+                pass
+            """
         }
     }
 
@@ -244,12 +251,12 @@ public class ClockworkKotlin: ClockworkBase
 
     func generateRequestParameter(_ parameter: FunctionParameter) -> String
     {
-        return "val \(parameter.name): \(kotlinizeType(parameter.type))"
+        return "\(parameter.name)"
     }
 
     func generateParameter(_ parameter: FunctionParameter) -> String
     {
-        return "\(parameter.name): \(kotlinizeType(parameter.type))"
+        return "\(parameter.name)"
     }
 
     func generateFunctions(_ className: String, _ functions: [Function]) throws -> String
@@ -271,16 +278,16 @@ public class ClockworkKotlin: ClockworkBase
 
     func generateFunctionSignature( _ function: Function) -> String
     {
-        let parameters = function.parameters.map { self.generateParameter($0) }
-        let parameterList = parameters.joined(separator: ", ")
-
-        if let returnType = function.returnType
+        if function.parameters.isEmpty
         {
-            return "    fun \(function.name)(\(parameterList)) : \(kotlinizeType(returnType))"
+            return "    def \(function.name)(self):"
         }
         else
         {
-            return "    fun \(function.name)(\(parameterList))"
+            let parameters = function.parameters.map { self.generateParameter($0) }
+            let parameterList = parameters.joined(separator: ", ")
+
+            return "    def \(function.name)(self, \(parameterList)):"
         }
     }
 
@@ -302,15 +309,15 @@ public class ClockworkKotlin: ClockworkBase
         if function.returnType == nil
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response:
-                            return
+                    if isinstance(response, \(function.name.capitalized)Response):
+                        return
             """
         }
         else
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response:
-                            return response.value
+                    if isistance(response, \(function.name.capitalized)Response):
+                        return response.value
             """
         }
 
@@ -318,8 +325,8 @@ public class ClockworkKotlin: ClockworkBase
         if includeDefault
         {
             defaultHandler = """
-                        default:
-                            throw \(className)ClientErrorBadReturnTypeException()
+                    else:
+                        raise Exception("bad return type")
             """
         }
         else
@@ -328,27 +335,16 @@ public class ClockworkKotlin: ClockworkBase
         }
 
         return """
-            {
-                val message = \(function.name.capitalized)Request\(structHandler)
-                val data = Json.encodeToString(message).toByteArray()
-                if (!this.connection.writeWithLengthPrefix(data, 64))
-                {
-                    throw \(className)ClientErrorWriteFailedException()
-                }
+                message = \(function.name.capitalized)Request\(structHandler)
+                if not self.connection.write(message):
+                    raise Exception("write failed")
 
-                val responseData = this.connection.readWithLengthPrefix(64)
-                if (responseData == null)
-                {
-                    throw \(className)ClientErrorReadFailedException()
-                }
+                response = self.connection.read()
+                if not response:
+                    raise Exception("read failed")
 
-                val response = Json.decodeFromString<\(className)Request>(responseData.decodeToString())
-                when (response)
-                {
         \(returnHandler)
         \(defaultHandler)
-                }
-            }
         """
 
     }
@@ -358,42 +354,26 @@ public class ClockworkKotlin: ClockworkBase
         return "\(argument.name)"
     }
 
-    func generateKotlinMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generatePythonMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Messages.kt...")
+        print("Generating \(className)Messages.py...")
 
-        let outputFile = outputURL.appending(component: "\(className)Messages.kt")
+        let outputFile = outputURL.appending(component: "\(className)Messages.py")
         let result = try self.generateRequestText(className, functions)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateKotlintClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generatePythontClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Client.kt...")
+        print("Generating \(className)Client.py...")
 
-        let outputFile = outputURL.appending(component: "\(className)Client.kt")
+        let outputFile = outputURL.appending(component: "\(className)Client.py")
         let result = try self.generateClientText(className, functions)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
-
-    func kotlinizeType(_ type: String) -> String
-    {
-        if type[type.startIndex] == "["
-        {
-            let start = type.index(after: type.startIndex)
-            let end = type.index(before: type.endIndex)
-
-            let innerType = type[start..<end]
-            return "Array<\(innerType)>"
-        }
-        else
-        {
-            return type
-        }
-    }
 }
 
-public enum ClockworkKotlinError: Error
+public enum ClockworkPythonError: Error
 {
     case emptyParameters
     case sourcesDirectoryDoesNotExist
