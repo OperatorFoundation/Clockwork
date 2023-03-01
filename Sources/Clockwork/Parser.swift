@@ -11,6 +11,7 @@ public protocol Parser
 {
     init()
 
+//    func findImports(_ source: String) throws -> [String]
     func findClassName(_ source: String) throws -> String
     func findFunctions(_ source: String) throws -> [Function]
     func findFunctionName(_ function: String) throws -> String

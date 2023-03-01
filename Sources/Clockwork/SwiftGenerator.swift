@@ -39,6 +39,7 @@ public class SwiftGenerator
         do
         {
             let source = try String(contentsOf: input)
+//            let imports = try self.parser.findImports(source)
             let className = try self.parser.findClassName(source)
 
             let functions = try self.parser.findFunctions(source)
@@ -48,9 +49,11 @@ public class SwiftGenerator
                 return
             }
 
-            try self.generateMessages(outputURL, className, functions)
-            try self.generateClient(outputURL, className, functions)
-            try self.generateServer(outputURL, className, functions)
+            let imports: [String] = []
+
+            try self.generateMessages(outputURL, imports, className, functions)
+            try self.generateClient(outputURL, imports, className, functions)
+            try self.generateServer(outputURL, imports, className, functions)
         }
         catch
         {
@@ -73,7 +76,7 @@ public class SwiftGenerator
             }
 
             let outputFile = output.appending(component: "\(className)Messages.swift")
-            try self.generateMessages(outputFile, className, functions)
+            try self.generateMessages(outputFile, [], className, functions)
         }
         catch
         {
@@ -96,7 +99,7 @@ public class SwiftGenerator
             }
 
             let outputFile = output.appending(component: "\(className)Client.swift")
-            try self.generateClient(outputFile, className, functions)
+            try self.generateClient(outputFile, [], className, functions)
         }
         catch
         {
@@ -119,7 +122,7 @@ public class SwiftGenerator
             }
 
             let outputFile = output.appending(component: "\(className)Server.swift")
-            try self.generateServer(outputFile, className, functions)
+            try self.generateServer(outputFile, [], className, functions)
         }
         catch
         {
@@ -127,7 +130,7 @@ public class SwiftGenerator
         }
     }
 
-    func generateMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generateMessages(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function]) throws
     {
         print("Generating \(className)Messages...")
 
@@ -136,7 +139,7 @@ public class SwiftGenerator
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generateClient(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function]) throws
     {
         print("Generating \(className)Client...")
 
@@ -145,7 +148,7 @@ public class SwiftGenerator
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateServer(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generateServer(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function]) throws
     {
         print("Generating \(className)Server...")
 
@@ -651,7 +654,7 @@ public class SwiftGenerator
 
         return """
             {
-                let message = \(className)Request.\(function.name)\(structHandler)
+                let message = \(className)Request.\(function.name)Request\(structHandler)
                 let encoder = JSONEncoder()
                 let data = try encoder.encode(message)
                 guard self.connection.writeWithLengthPrefix(data: data, prefixSizeInBits: 64) else
