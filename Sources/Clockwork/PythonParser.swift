@@ -13,6 +13,31 @@ public class PythonParser: Parser
     {
     }
 
+    public func findImports(_ source: String) throws -> [String]
+    {
+        return []
+//        let regex = try Regex("import [A-Za-z0-9]+")
+//        let ranges = source.ranges(of: regex)
+//        guard ranges.count == 1 else
+//        {
+//            if ranges.count == 0
+//            {
+//                throw ClockworkSpacetimeError.noMatches
+//            }
+//            else
+//            {
+//                throw ClockworkSpacetimeError.tooManyMatches
+//            }
+//        }
+//
+//        return ranges.map
+//        {
+//            range in
+//
+//            return String(source(range).split(separator: " ")[1])
+//        }
+    }
+
     public func findClassName(_ source: String) throws -> String
     {
         let regex = try Regex("class [A-Za-z0-9]+")
