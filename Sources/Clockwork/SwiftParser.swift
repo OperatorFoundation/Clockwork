@@ -32,6 +32,25 @@ public class SwiftParser: Parser
         return String(source[ranges[0]].split(separator: " ")[1])
     }
 
+    public func findImports(_ source: String) throws -> String
+    {
+        let regex = try Regex("import [A-Za-z0-9]+")
+        let ranges = source.ranges(of: regex)
+        guard ranges.count == 1 else
+        {
+            if ranges.count == 0
+            {
+                throw ClockworkSpacetimeError.noMatches
+            }
+            else
+            {
+                throw ClockworkSpacetimeError.tooManyMatches
+            }
+        }
+
+        return String(source[ranges[0]].split(separator: " ")[1])
+    }
+
     public func findFunctions(_ source: String) throws -> [Function]
     {
         let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9\\[\\]<>]+[?]?)?")

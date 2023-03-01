@@ -355,7 +355,7 @@ public class SwiftGenerator
                 if function.throwing
                 {
                     return """
-                                    case .\(function.name.capitalized):
+                                    case .\(function.name.capitalized)Request:
                                         try self.handler.\(function.name)()
                                         let response = try \(className)Response.\(function.name)
                                         let encoder = JSONEncoder()
@@ -369,7 +369,7 @@ public class SwiftGenerator
                 else
                 {
                     return """
-                                    case .\(function.name.capitalized):
+                                    case .\(function.name.capitalized)Request:
                                         self.handler.\(function.name)()
                                         let response = \(className)Response.\(function.name)
                                         let encoder = JSONEncoder()
@@ -386,7 +386,7 @@ public class SwiftGenerator
                 if function.throwing
                 {
                     return """
-                                    case .\(function.name.capitalized):
+                                    case .\(function.name.capitalized)Request:
                                         let result = try self.handler.\(function.name)()
                                         let response = \(className)Response.\(function.name)(result)
                                         let encoder = JSONEncoder()
@@ -400,7 +400,7 @@ public class SwiftGenerator
                 else
                 {
                     return """
-                                    case .\(function.name.capitalized):
+                                    case .\(function.name.capitalized)Request:
                                         let result = self.handler.\(function.name)()
                                         let response = \(className)Response.\(function.name)(result)
                                         let encoder = JSONEncoder()
@@ -454,7 +454,7 @@ public class SwiftGenerator
                 if function.throwing
                 {
                     return """
-                                    case .\(function.name.capitalized)(let value):
+                                    case .\(function.name.capitalized)Request(let value):
                                         let result = try self.handler.\(function.name)(\(argumentList))
                                         let response = try \(className)Response.\(function.name)(result)
                                         let encoder = JSONEncoder()
@@ -468,7 +468,7 @@ public class SwiftGenerator
                 else
                 {
                     return """
-                                    case .\(function.name.capitalized)(let value):
+                                    case .\(function.name.capitalized)Request(let value):
                                         let result = self.handler.\(function.name)(\(argumentList))
                                         let response = \(className)Response.\(function.name)(result)
                                         let encoder = JSONEncoder()
