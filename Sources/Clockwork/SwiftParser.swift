@@ -34,7 +34,11 @@ public class SwiftParser: Parser
 //        {
 //            range in
 //
-//            return String(source(range).split(separator: " ")[1])
+//            let substring = source(range)
+//            let subparts = substring.split(separator: " ")
+//            let part = subparts[1]
+//
+//            return String(part)
 //        }
     }
 
