@@ -134,6 +134,11 @@ public class SwiftGenerator
         //  Created by Clockwork on \(dateString).
         //
 
+        public enum \(className)Error: Error, Codable
+        {
+            case clockworkError(String)
+        }
+
         public enum \(className)Request: Codable
         {
         \(requestEnums)
@@ -170,6 +175,8 @@ public class SwiftGenerator
         import Foundation
 
         import TransmissionTypes
+
+        import \(className)
 
         public class \(className)Client
         {
@@ -214,8 +221,9 @@ public class SwiftGenerator
 
         import Foundation
 
-        import ClockworkTypes
         import TransmissionTypes
+
+        import \(className)
 
         public class \(className)Server
         {
@@ -286,10 +294,10 @@ public class SwiftGenerator
 
                         do
                         {
-                            let response = ClockworkError(error.localizedDescription)
+                            let response = \(className)Error.clockworkError(error.localizedDescription)
                             let encoder = JSONEncoder()
                             let data = try encoder.encode(response)
-                            connection.writeWithLengthPrefix(data, prefixSizeInBits: 64)
+                            let _ = connection.writeWithLengthPrefix(data: data, prefixSizeInBits: 64)
                         }
                         catch
                         {
@@ -596,15 +604,15 @@ public class SwiftGenerator
         if function.returnType == nil
         {
             returnHandler = """
-                        case .\(function.name.capitalized)Response:
-                            return
+                            case .\(function.name.capitalized)Response:
+                                return
             """
         }
         else
         {
             returnHandler = """
-                        case .\(function.name.capitalized)Response(let value):
-                            return value
+                            case .\(function.name.capitalized)Response(let value):
+                                return value
             """
         }
 
@@ -612,8 +620,8 @@ public class SwiftGenerator
         if includeDefault
         {
             defaultHandler = """
-                        default:
-                            throw \(className)ClientError.badReturnType
+                            default:
+                                throw \(className)ClientError.badReturnType
             """
         }
         else
@@ -637,11 +645,20 @@ public class SwiftGenerator
                 }
 
                 let decoder = JSONDecoder()
-                let response = try decoder.decode(\(className)Response.self, from: responseData)
-                switch response
+
+                do
                 {
-        \(returnHandler)
-        \(defaultHandler)
+                    let response = try decoder.decode(\(className)Response.self, from: responseData)
+                    switch response
+                    {
+            \(returnHandler)
+            \(defaultHandler)
+                    }
+                }
+                catch
+                {
+                    let remoteError = try decoder.decode(\(className)Error.self, from: responseData)
+                    throw remoteError
                 }
             }
         """
