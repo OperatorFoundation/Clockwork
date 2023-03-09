@@ -137,9 +137,19 @@ public class SwiftGenerator
 
         \(importLines)
 
-        public enum \(className)Error: Error, Codable
+        public struct \(className)Error: Error, Codable
         {
-            case clockworkError(String)
+            let message: String
+
+            public var localizedDescription: String
+            {
+                return "\(className)Error: " + self.message
+            }
+
+            public init(_ message: String)
+            {
+                self.message = message
+            }
         }
 
         public enum \(className)Request: Codable
@@ -301,7 +311,7 @@ public class SwiftGenerator
 
                         do
                         {
-                            let response = \(className)Error.clockworkError(error.localizedDescription)
+                            let response = \(className)Error(error.localizedDescription)
                             let encoder = JSONEncoder()
                             let data = try encoder.encode(response)
                             let _ = connection.writeWithLengthPrefix(data: data, prefixSizeInBits: 64)

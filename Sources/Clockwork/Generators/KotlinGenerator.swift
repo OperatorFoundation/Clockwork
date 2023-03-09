@@ -103,6 +103,8 @@ public class KotlinGenerator
 
         import kotlinx.serialization.Serializable
 
+        class \(className)Error(message: String) : Exception(message)
+
         sealed class \(className)Request {
         \(requestEnums)
         }

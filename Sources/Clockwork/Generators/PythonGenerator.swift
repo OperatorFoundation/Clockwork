@@ -132,6 +132,10 @@ public class PythonGenerator
         #  Created by Clockwork on \(dateString).
         #
 
+        class \(className)Error(Exception):
+            def __init__(message: String):
+                self.message = message
+
         class \(className)Request:
             pass
 
@@ -215,6 +219,13 @@ public class PythonGenerator
         \(cases)
                 except Exception as e:
                     print(e)
+
+                    error = \(className)Error(str(e))
+                    try:
+                        connection.write(error)
+                    except Exception as e2:
+                        print(e2)
+
                     return
         """
     }
