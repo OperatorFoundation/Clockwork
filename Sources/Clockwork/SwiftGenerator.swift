@@ -327,6 +327,17 @@ public class SwiftGenerator
                     catch
                     {
                         print(error)
+                        do
+                        {
+                            let response = Failure()
+                            let encoder = JSONEncoder()
+                            let data = try encoder.encode(response)
+                            connection.writeWithLengthPrefix(data, prefixSizeInBits: 64)
+                        }
+                        catch
+                        {
+                            print(error)
+                        }
                         return
                     }
                 }
