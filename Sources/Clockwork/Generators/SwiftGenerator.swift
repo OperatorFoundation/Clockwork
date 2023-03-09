@@ -25,7 +25,7 @@ public class SwiftGenerator
         {
             let source = try String(contentsOf: input)
             let className = try self.parser.findClassName(source)
-
+            let imports = try self.parser.findImports(source)
             let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
@@ -33,7 +33,7 @@ public class SwiftGenerator
                 return
             }
 
-            try self.generateMessages(output, [], className, functions)
+            try self.generateMessages(output, imports, className, functions)
         }
         catch
         {
@@ -47,7 +47,7 @@ public class SwiftGenerator
         {
             let source = try String(contentsOf: input)
             let className = try self.parser.findClassName(source)
-
+            let imports = try self.parser.findImports(source)
             let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
@@ -55,7 +55,7 @@ public class SwiftGenerator
                 return
             }
 
-            try self.generateClient(output, [], className, functions)
+            try self.generateClient(output, imports, className, functions)
         }
         catch
         {
@@ -69,7 +69,7 @@ public class SwiftGenerator
         {
             let source = try String(contentsOf: input)
             let className = try self.parser.findClassName(source)
-
+            let imports = try self.parser.findImports(source)
             let functions = try self.parser.findFunctions(source)
 
             guard functions.count > 0 else
@@ -77,7 +77,7 @@ public class SwiftGenerator
                 return
             }
 
-            try self.generateServer(output, [], className, functions)
+            try self.generateServer(output, imports, className, functions)
         }
         catch
         {
@@ -125,6 +125,7 @@ public class SwiftGenerator
         let requestStructs = try self.generateRequestStructs(functions)
 
         let responseEnums = try self.generateResponseEnumsText(functions)
+        let importLines = self.generateImports(imports)
 
         return """
         //
@@ -133,6 +134,8 @@ public class SwiftGenerator
         //
         //  Created by Clockwork on \(dateString).
         //
+
+        \(importLines)
 
         public enum \(className)Error: Error, Codable
         {
@@ -163,6 +166,7 @@ public class SwiftGenerator
         let dateString = formatter.string(from: date)
 
         let functions = try self.generateFunctions(className, functions)
+        let importLines = self.generateImports(imports)
 
         return """
         //
@@ -177,6 +181,7 @@ public class SwiftGenerator
         import TransmissionTypes
 
         import \(className)
+        \(importLines)
 
         public class \(className)Client
         {
@@ -210,6 +215,7 @@ public class SwiftGenerator
         let dateString = formatter.string(from: date)
 
         let cases = self.generateServerCases(className, functions)
+        let importLines = self.generateImports(imports)
 
         return """
         //
@@ -224,6 +230,7 @@ public class SwiftGenerator
         import TransmissionTypes
 
         import \(className)
+        \(importLines)
 
         public class \(className)Server
         {
@@ -318,6 +325,12 @@ public class SwiftGenerator
             case badReturnType
         }
         """
+    }
+
+    func generateImports(_ imports: [String]) -> String
+    {
+        let importLines = imports.map { return "import \($0)" }
+        return importLines.joined(separator: "\n")
     }
 
     func generateServerCases(_ className: String, _ functions: [Function]) -> String
