@@ -240,11 +240,11 @@ public class KotlinGenerator
 
         if let returnType = function.returnType
         {
-            return "    fun \(function.name)(\(parameterList)) : \(kotlinizeType(returnType))"
+            return "    @Synchronized fun \(function.name)(\(parameterList)) : \(kotlinizeType(returnType))"
         }
         else
         {
-            return "    fun \(function.name)(\(parameterList))"
+            return "    @Synchronized fun \(function.name)(\(parameterList))"
         }
     }
 
