@@ -14,53 +14,126 @@ import Clockwork
 
 struct CommandLine: ParsableCommand
 {
-    static let configuration = CommandConfiguration(commandName: "clockwork")
+    static let configuration = CommandConfiguration(
+        commandName: "clockwork",
+        subcommands: [New.self, Run.self]
+    )
+}
 
-    @Argument(help: "path to .swift source files for business logic")
-    var source: String
-
-    @Argument(help: "directory to output generated files")
-    var output: String
-
-    @Flag(help: "output Kotlin files instead of Swift")
-    var kotlin: Bool = false
-
-    @Flag(help: "output python files instead of Swift")
-    var python: Bool = false
-
-    mutating public func run() throws
+extension CommandLine
+{
+    struct New: ParsableCommand
     {
-        let parser: any Parser
-        let sourceURL = URL(fileURLWithPath: source)
-        switch sourceURL.pathExtension
-        {
-            case "swift":
-                parser = SwiftParser()
+        @Argument(help: "path to .json config file")
+        var config: String
 
-            case "py":
-                parser = PythonParser()
+        @Argument(help: "path to logic model file (.swift or .py)")
+        var source: String
 
-            default:
-                throw ClockworkCommandLineError.noParser(sourceURL.pathExtension)
-        }
+        @Option(help: "directory to output generated Messages.swift file")
+        var swiftMessages: String?
 
-        if kotlin
+        @Option(help: "directory to output generated Server.swift file")
+        var swiftServer: String?
+
+        @Option(help: "directory to output generated Client.swift file")
+        var swiftClient: String?
+
+        @Option(help: "directory to output generated Messages.kt file")
+        var kotlinMessages: String?
+
+        @Option(help: "directory to output generated Client.kt file")
+        var kotlinClient: String?
+
+        @Option(help: "directory to output generated Messages.py file")
+        var pythonMessages: String?
+
+        @Option(help: "directory to output generated Server.py file")
+        var pythonServer: String?
+
+        @Option(help: "directory to output generated Client.py file")
+        var pythonClient: String?
+
+        mutating public func run() throws
         {
-            print("ClockworkKotlin \(source) \(output)")
-            let clockwork = ClockworkKotlin(parser: parser)
-            try clockwork.generate(source: source, output: output)
+            let configURL = URL(fileURLWithPath: config)
+            let clockworkConfig = ClockworkConfig(source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer)
+            try clockworkConfig.save(url: configURL)
         }
-        else if python
+    }
+}
+
+extension CommandLine
+{
+    struct Run: ParsableCommand
+    {
+        @Argument(help: "path to .json config file")
+        var configPath: String
+
+        mutating public func run() throws
         {
-            print("ClockworkPython \(source) \(output)")
-            let clockwork = ClockworkPython(parser: parser)
-            try clockwork.generate(source: source, output: output)
-        }
-        else
-        {
-            print("Clockwork \(source) \(output)")
-            let clockwork = SwiftGenerator(parser: parser)
-            try clockwork.generate(source: source, output: output)
+            let url = URL(fileURLWithPath: configPath)
+            let config = try ClockworkConfig.load(url: url)
+
+            let parser: any Parser
+
+            let sourceURL = URL(fileURLWithPath: config.source)
+            switch sourceURL.pathExtension
+            {
+                case "swift":
+                    parser = SwiftParser()
+
+                case "py":
+                    parser = PythonParser()
+
+                default:
+                    throw ClockworkCommandLineError.noParser(sourceURL.pathExtension)
+            }
+
+            let clockworkKotlin = KotlinGenerator(parser: parser)
+            if let kotlinMessages = config.kotlinMessages
+            {
+                let outputURL = URL(fileURLWithPath: kotlinMessages)
+                clockworkKotlin.generateMessages(sourceURL, outputURL)
+            }
+
+            if let kotlinClient = config.kotlinClient
+            {
+                let outputURL = URL(fileURLWithPath: kotlinClient)
+                clockworkKotlin.generateClient(sourceURL, outputURL)
+            }
+
+            let clockworkPython = PythonGenerator(parser: parser)
+            if let pythonMessages = config.pythonMessages
+            {
+                let outputURL = URL(fileURLWithPath: pythonMessages)
+                clockworkPython.generateMessages(sourceURL, outputURL)
+            }
+
+            if let pythonServer = config.pythonServer
+            {
+                let outputURL = URL(fileURLWithPath: pythonServer)
+                clockworkPython.generateServer(sourceURL, outputURL)
+            }
+
+            let clockworkSwift = SwiftGenerator(parser: parser)
+            if let swiftMessages = config.swiftMessages
+            {
+                let outputURL = URL(fileURLWithPath: swiftMessages)
+                clockworkSwift.generateMessages(sourceURL, outputURL)
+            }
+
+            if let swiftClient = config.swiftClient
+            {
+                let outputURL = URL(fileURLWithPath: swiftClient)
+                clockworkSwift.generateClient(sourceURL, outputURL)
+            }
+
+            if let swiftServer = config.swiftServer
+            {
+                let outputURL = URL(fileURLWithPath: swiftServer)
+                clockworkSwift.generateServer(sourceURL, outputURL)
+            }
         }
     }
 }

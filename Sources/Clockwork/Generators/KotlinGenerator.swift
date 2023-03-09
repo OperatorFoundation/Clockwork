@@ -10,51 +10,13 @@ import Foundation
 
 import Gardener
 
-public class ClockworkKotlin
+public class KotlinGenerator
 {
     let parser: any Parser
 
     public init(parser: any Parser)
     {
         self.parser = parser
-    }
-
-    public func generate(source: String, output: String) throws
-    {
-        let outputURL = URL(fileURLWithPath: output)
-        if !File.exists(output)
-        {
-            guard File.makeDirectory(url: outputURL) else
-            {
-                throw ClockworkError.noOutputDirectory
-            }
-        }
-
-        let sourceURL = URL(fileURLWithPath: source)
-        self.generate(sourceURL, outputURL)
-    }
-
-    public func generate(_ input: URL, _ outputURL: URL)
-    {
-        do
-        {
-            let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
-
-            let functions = try self.parser.findFunctions(source)
-
-            guard functions.count > 0 else
-            {
-                return
-            }
-
-            try self.generateMessages(outputURL, className, functions)
-            try self.generateClient(outputURL, className, functions)
-        }
-        catch
-        {
-            print(error)
-        }
     }
 
     public func generateMessages(_ input: URL, _ output: URL)
@@ -71,8 +33,7 @@ public class ClockworkKotlin
                 return
             }
 
-            let outputFile = output.appending(component: "\(className)Messages.kt")
-            try self.generateMessages(outputFile, className, functions)
+            try self.generateMessages(output, className, functions)
         }
         catch
         {
@@ -94,8 +55,7 @@ public class ClockworkKotlin
                 return
             }
 
-            let outputFile = output.appending(component: "\(className)Client.kt")
-            try self.generateClient(outputFile, className, functions)
+            try self.generateClient(output, className, functions)
         }
         catch
         {
@@ -105,7 +65,7 @@ public class ClockworkKotlin
 
     func generateMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Messages...")
+        print("Generating \(className)Messages.kt...")
 
         let outputFile = outputURL.appending(component: "\(className)Messages.kt")
         let result = try self.generateRequestText(className, functions)
@@ -114,7 +74,7 @@ public class ClockworkKotlin
 
     func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Client...")
+        print("Generating \(className)Client.kt...")
 
         let outputFile = outputURL.appending(component: "\(className)Client.kt")
         let result = try self.generateClientText(className, functions)

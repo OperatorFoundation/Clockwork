@@ -10,52 +10,13 @@ import Foundation
 
 import Gardener
 
-public class ClockworkPython
+public class PythonGenerator
 {
     let parser: any Parser
 
     public init(parser: any Parser)
     {
         self.parser = parser
-    }
-
-    public func generate(source: String, output: String) throws
-    {
-        let outputURL = URL(fileURLWithPath: output)
-        if !File.exists(output)
-        {
-            guard File.makeDirectory(url: outputURL) else
-            {
-                throw ClockworkError.noOutputDirectory
-            }
-        }
-
-        let sourceURL = URL(fileURLWithPath: source)
-        self.generate(sourceURL, outputURL)
-    }
-
-    public func generate(_ input: URL, _ outputURL: URL)
-    {
-        do
-        {
-            let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
-
-            let functions = try self.parser.findFunctions(source)
-
-            guard functions.count > 0 else
-            {
-                return
-            }
-
-            try self.generateMessages(outputURL, className, functions)
-            try self.generateClient(outputURL, className, functions)
-            try self.generateServer(outputURL, className, functions)
-        }
-        catch
-        {
-            print(error)
-        }
     }
 
     public func generateMessages(_ input: URL, _ output: URL)
@@ -72,8 +33,7 @@ public class ClockworkPython
                 return
             }
 
-            let outputFile = output.appending(component: "\(className)Messages.py")
-            try self.generateMessages(outputFile, className, functions)
+            try self.generateMessages(output, className, functions)
         }
         catch
         {
@@ -95,8 +55,7 @@ public class ClockworkPython
                 return
             }
 
-            let outputFile = output.appending(component: "\(className)Client.py")
-            try self.generateClient(outputFile, className, functions)
+            try self.generateClient(output, className, functions)
         }
         catch
         {
@@ -118,8 +77,7 @@ public class ClockworkPython
                 return
             }
 
-            let outputFile = output.appending(component: "\(className)Server.py")
-            try self.generateServer(outputFile, className, functions)
+            try self.generateServer(output, className, functions)
         }
         catch
         {
@@ -129,7 +87,7 @@ public class ClockworkPython
 
     func generateMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Messages...")
+        print("Generating \(className)Messages.py...")
 
         let outputFile = outputURL.appending(component: "\(className)Messages.py")
         let result = try self.generateRequestText(className, functions)
@@ -138,7 +96,7 @@ public class ClockworkPython
 
     func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Client...")
+        print("Generating \(className)Client.py...")
 
         let outputFile = outputURL.appending(component: "\(className)Client.py")
         let result = try self.generateClientText(className, functions)
@@ -147,7 +105,7 @@ public class ClockworkPython
 
     func generateServer(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
-        print("Generating \(className)Server...")
+        print("Generating \(className)Server.py...")
 
         let outputFile = outputURL.appending(component: "\(className)Server.py")
         let result = try self.generateServerText(className, functions)
