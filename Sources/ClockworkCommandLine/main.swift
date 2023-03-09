@@ -39,6 +39,9 @@ extension CommandLine
         @Option(help: "directory to output generated Client.swift file")
         var swiftClient: String?
 
+        @Option(help: "package name for generated Kotlin files")
+        var kotlinPackage: String?
+
         @Option(help: "directory to output generated Messages.kt file")
         var kotlinMessages: String?
 
@@ -57,6 +60,15 @@ extension CommandLine
         mutating public func run() throws
         {
             let configURL = URL(fileURLWithPath: config)
+
+            if (kotlinMessages != nil) || (kotlinClient != nil)
+            {
+                guard kotlinPackage != nil else
+                {
+                    throw ClockworkCommandLineError.packageRequired
+                }
+            }
+
             let clockworkConfig = ClockworkConfig(source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer)
             try clockworkConfig.save(url: configURL)
         }
@@ -91,6 +103,12 @@ extension CommandLine
             }
 
             let clockworkKotlin = KotlinGenerator(parser: parser)
+
+            if (config.kotlinMessages != nil) || (config.kotlinClient != nil)
+            {
+//                guard config. // FIXME
+            }
+
             if let kotlinMessages = config.kotlinMessages
             {
                 let outputURL = URL(fileURLWithPath: kotlinMessages)
@@ -141,6 +159,7 @@ extension CommandLine
 public enum ClockworkCommandLineError: Error
 {
     case noParser(String)
+    case packageRequired
 }
 
 CommandLine.main()
