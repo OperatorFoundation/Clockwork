@@ -101,7 +101,9 @@ public class KotlinGenerator
         }
 
         let requestEnums = self.generateRequestEnumsText(className, functions)
+        let requestEnumTypes = self.generateTypeEnumsText(functions, isRequest: true)
         let responseEnums = try self.generateResponseEnumsText(className, functions)
+        let responseEnumTypes = self.generateTypeEnumsText(functions, isRequest: false)
 
         return """
         //
@@ -115,16 +117,24 @@ public class KotlinGenerator
 
         import kotlinx.serialization.Serializable
 
-        @Serializable data class \(className)Error(val message: String): Exception()
+        @Serializable data class \(className)Error(override val message: String): Exception()
         {
             override fun toString(): String
             {
                 return "\(className)Error: " + this.message
             }
         }
+        
+        enum class \(className)RequestTypes(val value: Int) {
+        \(requestEnumTypes)
+        }
 
         sealed class \(className)Request {
         \(requestEnums)
+        }
+        
+        enum class \(className)ResponseTypes(val value: Int) {
+        \(responseEnumTypes)
         }
 
         sealed class \(className)Response {
@@ -202,12 +212,36 @@ public class KotlinGenerator
     {
         if function.parameters.isEmpty
         {
-            return "    @Serializable data class \(function.name.capitalized)Request() : \(className.capitalized)Request()"
+            return "    @Serializable data class \(function.name.capitalized)Request() : \(className)Request()"
         }
         else
         {
             let requestParameters = generateRequestParameters(function)
-            return "    @Serializable data class \(function.name.capitalized)Request(\(requestParameters)) : \(className.capitalized)Request()"
+            return "    @Serializable data class \(function.name.capitalized)Request(\(requestParameters)) : \(className)Request()"
+        }
+    }
+    
+    func generateTypeEnumsText(_ functions: [Function], isRequest request: Bool) -> String
+    {
+        var enumCases = [String]()
+        
+        for (index, element) in functions.enumerated()
+        {
+            enumCases.append(self.generateTypeEnumCase(element, isRequest: request) + "(\(index))")
+        }
+
+        return enumCases.joined(separator: ",\n")
+    }
+    
+    func generateTypeEnumCase(_ function: Function, isRequest request: Bool) -> String
+    {
+        if request
+        {
+            return "    \(function.name.capitalized)Request"
+        }
+        else
+        {
+            return "    \(function.name.capitalized)Response"
         }
     }
 
@@ -221,11 +255,11 @@ public class KotlinGenerator
     {
         if let returnType = function.returnType
         {
-            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType))) : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType))) : \(className)Response()"
         }
         else
         {
-            return "    @Serializable data class \(function.name.capitalized)Response() : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response() : \(className)Response()"
         }
     }
 
@@ -307,8 +341,11 @@ public class KotlinGenerator
 
         return """
             {
-                val message = \(function.name.capitalized)Request\(structHandler)
-                val data = Json.encodeToString(message).toByteArray()
+                val message = \(className)Request.\(function.name.capitalized)Request\(structHandler)
+                val jsonString = Json.encodeToString(message)
+                val normalizedJsonString = "{\\"\(function.name.capitalized)Request\\":{\\"_${\(className)RequestTypes.\(function.name.capitalized)Request.value}\\":$jsonString}}"
+                val data = normalizedJsonString.toByteArray()
+        
                 if (!this.connection.writeWithLengthPrefix(data, 64))
                 {
                     throw \(className)WriteFailedException()
@@ -322,8 +359,19 @@ public class KotlinGenerator
 
                 try
                 {
-                    val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(responseData.decodeToString())
-        \(returnHandler)
+                    val normalizedJSONString = responseData.decodeToString()
+                    val firstColonIndex = normalizedJSONString.indexOf(":")
+
+                    if (firstColonIndex < 0)
+                    {
+                        throw Exception("invalidJson")
+                    }
+
+                    val secondColonIndex = normalizedJSONString.indexOf(":", firstColonIndex + 1)
+                    val denormalizedJSONString = normalizedJSONString.slice(secondColonIndex + 1 until normalizedJSONString.length - 2)
+                    val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(denormalizedJSONString)
+        
+                    \(returnHandler)
                 }
                 catch(error: Exception)
                 {
