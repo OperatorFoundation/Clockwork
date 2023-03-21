@@ -172,7 +172,7 @@ public class KotlinGenerator
         {
             override fun toString(): String
             {
-                return "\(className)Error: " + self.message
+                return "\(className)Error: " + this.message
             }
         }
 
