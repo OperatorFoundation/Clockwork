@@ -274,13 +274,13 @@ public class KotlinGenerator
         if function.returnType == nil
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response -> return
+                        return
             """
         }
         else
         {
             returnHandler = """
-                        is \(className)Response.\(function.name.capitalized)Response -> return response.value
+                        return response.value
             """
         }
 
@@ -301,14 +301,14 @@ public class KotlinGenerator
 
                 try
                 {
-                    val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response)>(responseData.decodeToString())
+                    val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(responseData.decodeToString())
         \(returnHandler)
                 }
                 catch(error: Exception)
                 {
                     try
                     {
-                        val errorResponse = Json.decodeFromString<\(className)Error>(resposeData.decodeToString())
+                        val errorResponse = Json.decodeFromString<\(className)Error>(responseData.decodeToString())
                         throw errorResponse
                     }
                     catch(error: Exception)
