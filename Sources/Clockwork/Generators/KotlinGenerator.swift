@@ -145,6 +145,14 @@ public class KotlinGenerator
         \(functions)
         }
 
+        @Serializable data class \(className)Error(val message: String): Exception()
+        {
+            fun toString(): String
+            {
+                return "\(className)Error: " + self.message
+            }
+        }
+
         class \(className)ConnectionRefusedException(): Exception()
         {
         }
@@ -276,18 +284,6 @@ public class KotlinGenerator
             """
         }
 
-        let defaultHandler: String
-        if includeDefault
-        {
-            defaultHandler = """
-                        else -> throw \(className)BadReturnTypeException()
-            """
-        }
-        else
-        {
-            defaultHandler = ""
-        }
-
         return """
             {
                 val message = \(function.name.capitalized)Request\(structHandler)
@@ -303,11 +299,22 @@ public class KotlinGenerator
                     throw \(className)ReadFailedException()
                 }
 
-                val response = Json.decodeFromString<\(className)Response>(responseData.decodeToString())
-                when (response)
+                try
                 {
+                    val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response)>(responseData.decodeToString())
         \(returnHandler)
-        \(defaultHandler)
+                }
+                catch(error: Exception)
+                {
+                    try
+                    {
+                        val errorResponse = Json.decodeFromString<\(className)Error>(resposeData.decodeToString())
+                        throw errorResponse
+                    }
+                    catch(error: Exception)
+                    {
+                        throw \(className)BadTypeException();
+                    }
                 }
             }
         """
