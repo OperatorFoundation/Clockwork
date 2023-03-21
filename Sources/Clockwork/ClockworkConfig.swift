@@ -18,8 +18,9 @@ public class ClockworkConfig: Codable
     public let kotlinClient: String?
     public let swiftServer: String?
     public let pythonServer: String?
+    public let kotlinPackage: String?
 
-    public init(source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil)
+    public init(source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil, kotlinPackage: String? = nil)
     {
         self.source = source
         self.swiftMessages = swiftMessages
@@ -30,6 +31,7 @@ public class ClockworkConfig: Codable
         self.kotlinClient = kotlinClient
         self.swiftServer = swiftServer
         self.pythonServer = pythonServer
+        self.kotlinPackage = kotlinPackage
     }
 }
 

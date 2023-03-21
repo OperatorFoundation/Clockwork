@@ -106,19 +106,22 @@ extension CommandLine
 
             if (config.kotlinMessages != nil) || (config.kotlinClient != nil)
             {
-//                guard config. // FIXME
+                guard config.kotlinPackage != nil else
+                {
+                    throw ClockworkCommandLineError.packageRequired
+                }
             }
 
             if let kotlinMessages = config.kotlinMessages
             {
                 let outputURL = URL(fileURLWithPath: kotlinMessages)
-                clockworkKotlin.generateMessages(sourceURL, outputURL)
+                clockworkKotlin.generateMessages(sourceURL, outputURL, config.kotlinPackage)
             }
 
             if let kotlinClient = config.kotlinClient
             {
                 let outputURL = URL(fileURLWithPath: kotlinClient)
-                clockworkKotlin.generateClient(sourceURL, outputURL)
+                clockworkKotlin.generateClient(sourceURL, outputURL, config.kotlinPackage)
             }
 
             let clockworkPython = PythonGenerator(parser: parser)

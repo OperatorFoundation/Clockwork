@@ -19,7 +19,7 @@ public class KotlinGenerator
         self.parser = parser
     }
 
-    public func generateMessages(_ input: URL, _ output: URL)
+    public func generateMessages(_ input: URL, _ output: URL, _ package: String?)
     {
         do
         {
@@ -33,7 +33,7 @@ public class KotlinGenerator
                 return
             }
 
-            try self.generateMessages(output, className, functions)
+            try self.generateMessages(output, className, functions, package)
         }
         catch
         {
@@ -41,7 +41,7 @@ public class KotlinGenerator
         }
     }
 
-    public func generateClient(_ input: URL, _ output: URL)
+    public func generateClient(_ input: URL, _ output: URL, _ package: String?)
     {
         do
         {
@@ -55,7 +55,7 @@ public class KotlinGenerator
                 return
             }
 
-            try self.generateClient(output, className, functions)
+            try self.generateClient(output, className, functions, package)
         }
         catch
         {
@@ -63,25 +63,25 @@ public class KotlinGenerator
         }
     }
 
-    func generateMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generateMessages(_ outputURL: URL, _ className: String, _ functions: [Function], _ package: String?) throws
     {
         print("Generating \(className)Messages.kt...")
 
         let outputFile = outputURL.appending(component: "\(className)Messages.kt")
-        let result = try self.generateRequestText(className, functions)
+        let result = try self.generateRequestText(className, functions, package)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function], _ package: String?) throws
     {
         print("Generating \(className)Client.kt...")
 
         let outputFile = outputURL.appending(component: "\(className)Client.kt")
-        let result = try self.generateClientText(className, functions)
+        let result = try self.generateClientText(className, functions, package)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateRequestText(_ className: String, _ functions: [Function]) throws -> String
+    func generateRequestText(_ className: String, _ functions: [Function], _ package: String?) throws -> String
     {
         let date = Date() // now
         let formatter = DateFormatter()
@@ -89,6 +89,16 @@ public class KotlinGenerator
         formatter.timeStyle = .none
 
         let dateString = formatter.string(from: date)
+
+        let packageDefinition: String
+        if let package
+        {
+            packageDefinition = "package \(package)"
+        }
+        else
+        {
+            packageDefinition = ""
+        }
 
         let requestEnums = self.generateRequestEnumsText(className, functions)
         let responseEnums = try self.generateResponseEnumsText(className, functions)
@@ -100,6 +110,8 @@ public class KotlinGenerator
         //
         //  Created by Clockwork on \(dateString).
         //
+
+        \(packageDefinition)
 
         import kotlinx.serialization.Serializable
 
@@ -115,7 +127,7 @@ public class KotlinGenerator
         """
     }
 
-    func generateClientText(_ className: String, _ functions: [Function]) throws -> String
+    func generateClientText(_ className: String, _ functions: [Function],  _ package: String?) throws -> String
     {
         let date = Date() // now
         let formatter = DateFormatter()
@@ -124,6 +136,15 @@ public class KotlinGenerator
 
         let dateString = formatter.string(from: date)
 
+        let packageDefinition: String
+        if let package
+        {
+            packageDefinition = "package \(package)"
+        }
+        else
+        {
+            packageDefinition = ""
+        }
         let functions = try self.generateFunctions(className, functions)
 
         return """
@@ -133,6 +154,8 @@ public class KotlinGenerator
         //
         //  Created by Clockwork on \(dateString).
         //
+
+        \(packageDefinition)
 
         import kotlinx.serialization.json.Json
         import kotlinx.serialization.encodeToString
@@ -326,21 +349,21 @@ public class KotlinGenerator
         return "\(argument.name)"
     }
 
-    func generateKotlinMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generateKotlinMessages(_ outputURL: URL, _ className: String, _ functions: [Function], _ package: String?) throws
     {
         print("Generating \(className)Messages.kt...")
 
         let outputFile = outputURL.appending(component: "\(className)Messages.kt")
-        let result = try self.generateRequestText(className, functions)
+        let result = try self.generateRequestText(className, functions, package)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateKotlintClient(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
+    func generateKotlintClient(_ outputURL: URL, _ className: String, _ functions: [Function], _ package: String?) throws
     {
         print("Generating \(className)Client.kt...")
 
         let outputFile = outputURL.appending(component: "\(className)Client.kt")
-        let result = try self.generateClientText(className, functions)
+        let result = try self.generateClientText(className, functions, package)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
