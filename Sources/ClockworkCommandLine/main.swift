@@ -69,7 +69,7 @@ extension CommandLine
                 }
             }
 
-            let clockworkConfig = ClockworkConfig(source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer)
+            let clockworkConfig = ClockworkConfig(source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage)
             try clockworkConfig.save(url: configURL)
         }
     }
