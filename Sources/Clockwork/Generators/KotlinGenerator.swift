@@ -334,7 +334,7 @@ public class KotlinGenerator
                     }
                     catch(error: Exception)
                     {
-                        throw \(className)BadTypeException()
+                        throw \(className)BadReturnTypeException()
                     }
                 }
             }
