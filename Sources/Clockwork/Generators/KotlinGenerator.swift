@@ -115,7 +115,13 @@ public class KotlinGenerator
 
         import kotlinx.serialization.Serializable
 
-        class \(className)Error(message: String) : Exception(message)
+        @Serializable data class \(className)Error(val message: String): Exception()
+        {
+            override fun toString(): String
+            {
+                return "\(className)Error: " + this.message
+            }
+        }
 
         sealed class \(className)Request {
         \(requestEnums)
@@ -166,14 +172,6 @@ public class KotlinGenerator
         class \(className)Client(val connection: Connection)
         {
         \(functions)
-        }
-
-        @Serializable data class \(className)Error(val message: String): Exception()
-        {
-            override fun toString(): String
-            {
-                return "\(className)Error: " + this.message
-            }
         }
 
         class \(className)ConnectionRefusedException(): Exception()
