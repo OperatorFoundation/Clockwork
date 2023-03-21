@@ -170,7 +170,7 @@ public class KotlinGenerator
 
         @Serializable data class \(className)Error(val message: String): Exception()
         {
-            fun toString(): String
+            override fun toString(): String
             {
                 return "\(className)Error: " + self.message
             }
