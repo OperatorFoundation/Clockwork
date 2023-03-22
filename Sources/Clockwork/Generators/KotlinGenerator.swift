@@ -329,13 +329,13 @@ public class KotlinGenerator
         if function.returnType == nil
         {
             returnHandler = """
-                        return
+            return
             """
         }
         else
         {
             returnHandler = """
-                        return response.value
+            return response.value
             """
         }
 
