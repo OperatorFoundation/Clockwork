@@ -342,11 +342,13 @@ public class KotlinGenerator
         return """
             {
                 val message = \(className)Request.\(function.name.capitalized)Request\(structHandler)
-                val jsonString = Json.encodeToString(message)
-                val normalizedJsonString = "{\\"\(function.name.capitalized)Request\\":{\\"_${\(className)RequestTypes.\(function.name.capitalized)Request.value}\\":$jsonString}}"
-                val data = normalizedJsonString.toByteArray()
+                val requestJSONString = Json.encodeToString(message)
+                println("Created a kotlin friendly JSON request:\\n$requestJSONString")
+                val normalizedRequestJsonString = "{\\"\(function.name.capitalized)Request\\":{\\"_${\(className)RequestTypes.\(function.name.capitalized)Request.value}\\":$requestJSONString}}"
+                println("Created a swift friendly JSON request:\\n$normalizedRequestJsonString")
+                val requestData = normalizedRequestJsonString.toByteArray()
         
-                if (!this.connection.writeWithLengthPrefix(data, 64))
+                if (!this.connection.writeWithLengthPrefix(requestData, 64))
                 {
                     throw \(className)WriteFailedException()
                 }
@@ -359,19 +361,35 @@ public class KotlinGenerator
 
                 try
                 {
-                    val normalizedJSONString = responseData.decodeToString()
-                    val firstColonIndex = normalizedJSONString.indexOf(":")
+                    val normalizedResponseJSONString = responseData.decodeToString()
+                    println("Received a response:\\n$normalizedResponseJSONString")
 
-                    if (firstColonIndex < 0)
+                    if (normalizedResponseJSONString.contains(\"\(function.name.capitalized)Response\", ignoreCase = true))
                     {
-                        throw Exception("invalidJson")
-                    }
+                        val firstColonIndex = normalizedResponseJSONString.indexOf(\":\")
+                        if (firstColonIndex < 0)
+                        {
+                            throw WreathFrontendBadReturnTypeException()
+                        }
 
-                    val secondColonIndex = normalizedJSONString.indexOf(":", firstColonIndex + 1)
-                    val denormalizedJSONString = normalizedJSONString.slice(secondColonIndex + 1 until normalizedJSONString.length - 2)
-                    val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(denormalizedJSONString)
-        
-                    \(returnHandler)
+                        val arrayStartIndex = normalizedResponseJSONString.indexOf(\"[\")
+                        if (arrayStartIndex < 0)
+                        {
+                            throw WreathFrontendBadReturnTypeException()
+                        }
+
+                        val firstPart = normalizedResponseJSONString.slice(0 until firstColonIndex + 1).replaceFirst(\"\(function.name.capitalized)Response\", \"value\")
+                        val secondPart = normalizedResponseJSONString.slice(arrayStartIndex until normalizedResponseJSONString.length - 1)
+                        val denormalizedResponseJSONString = firstPart + secondPart
+                        println("Converted response to Kotlin friendly JSON:\\n$denormalizedResponseJSONString")
+                        val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(denormalizedResponseJSONString)
+
+                        \(returnHandler)
+                    }
+                    else
+                    {
+                        throw WreathFrontendBadReturnTypeException()
+                    }
                 }
                 catch(error: Exception)
                 {
