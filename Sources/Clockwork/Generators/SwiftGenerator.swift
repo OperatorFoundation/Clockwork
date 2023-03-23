@@ -196,7 +196,7 @@ public class SwiftGenerator
         public class \(className)Client
         {
             let connection: TransmissionTypes.Connection
-            let lock: DispatchSemaphore(value: 1)
+            let lock = DispatchSemaphore(value: 1)
 
             public init(connection: TransmissionTypes.Connection)
             {
