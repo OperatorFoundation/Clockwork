@@ -101,9 +101,7 @@ public class KotlinGenerator
         }
 
         let requestEnums = self.generateRequestEnumsText(className, functions)
-        let requestEnumTypes = self.generateTypeEnumsText(functions, isRequest: true)
         let responseEnums = try self.generateResponseEnumsText(className, functions)
-        let responseEnumTypes = self.generateTypeEnumsText(functions, isRequest: false)
 
         return """
         //
@@ -124,17 +122,9 @@ public class KotlinGenerator
                 return "\(className)Error: " + this.message
             }
         }
-        
-        enum class \(className)RequestTypes(val value: Int) {
-        \(requestEnumTypes)
-        }
 
         sealed class \(className)Request {
         \(requestEnums)
-        }
-        
-        enum class \(className)ResponseTypes(val value: Int) {
-        \(responseEnumTypes)
         }
 
         sealed class \(className)Response {
@@ -218,30 +208,6 @@ public class KotlinGenerator
         {
             let requestParameters = generateRequestParameters(function)
             return "    @Serializable data class \(function.name.capitalized)Request(\(requestParameters)) : \(className)Request()"
-        }
-    }
-    
-    func generateTypeEnumsText(_ functions: [Function], isRequest request: Bool) -> String
-    {
-        var enumCases = [String]()
-        
-        for (index, element) in functions.enumerated()
-        {
-            enumCases.append(self.generateTypeEnumCase(element, isRequest: request) + "(\(index))")
-        }
-
-        return enumCases.joined(separator: ",\n")
-    }
-    
-    func generateTypeEnumCase(_ function: Function, isRequest request: Bool) -> String
-    {
-        if request
-        {
-            return "    \(function.name.capitalized)Request"
-        }
-        else
-        {
-            return "    \(function.name.capitalized)Response"
         }
     }
 
