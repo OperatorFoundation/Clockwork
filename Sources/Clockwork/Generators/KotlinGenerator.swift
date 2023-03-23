@@ -344,7 +344,7 @@ public class KotlinGenerator
                 val message = \(className)Request.\(function.name.capitalized)Request\(structHandler)
                 val requestJSONString = Json.encodeToString(message)
                 println("Created a kotlin friendly JSON request:\\n$requestJSONString")
-                val normalizedRequestJsonString = "{\\"\(function.name.capitalized)Request\\":{\\"_${\(className)RequestTypes.\(function.name.capitalized)Request.value}\\":$requestJSONString}}"
+                val normalizedRequestJsonString = "{\\"\(function.name.capitalized)Request\\":{\\"value\\":$requestJSONString}}"
                 println("Created a swift friendly JSON request:\\n$normalizedRequestJsonString")
                 val requestData = normalizedRequestJsonString.toByteArray()
         
@@ -366,21 +366,13 @@ public class KotlinGenerator
 
                     if (normalizedResponseJSONString.contains(\"\(function.name.capitalized)Response\", ignoreCase = true))
                     {
-                        val firstColonIndex = normalizedResponseJSONString.indexOf(\":\")
+                        val firstColonIndex = normalizedResponseJSONString.indexOf(":")
                         if (firstColonIndex < 0)
                         {
                             throw WreathFrontendBadReturnTypeException()
                         }
 
-                        val arrayStartIndex = normalizedResponseJSONString.indexOf(\"[\")
-                        if (arrayStartIndex < 0)
-                        {
-                            throw WreathFrontendBadReturnTypeException()
-                        }
-
-                        val firstPart = normalizedResponseJSONString.slice(0 until firstColonIndex + 1).replaceFirst(\"\(function.name.capitalized)Response\", \"value\")
-                        val secondPart = normalizedResponseJSONString.slice(arrayStartIndex until normalizedResponseJSONString.length - 1)
-                        val denormalizedResponseJSONString = firstPart + secondPart
+                        val denormalizedResponseJSONString = normalizedResponseJSONString.slice(firstColonIndex + 1 until normalizedResponseJSONString.length - 1)
                         println("Converted response to Kotlin friendly JSON:\\n$denormalizedResponseJSONString")
                         val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(denormalizedResponseJSONString)
 
