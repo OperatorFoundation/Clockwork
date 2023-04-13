@@ -415,7 +415,7 @@ public class SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request:
                                         let result = self.handler.\(function.name)()
-                                        let response = \(className)Response.\(function.name.capitalized)Reponse(value: result)
+                                        let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
