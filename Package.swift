@@ -17,6 +17,7 @@ let package = Package(
 
         .package(url: "https://github.com/OperatorFoundation/Gardener", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Spacetime", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/Text", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Transmission", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/TransmissionTypes", branch: "main"),
     ],
@@ -32,6 +33,8 @@ let package = Package(
             name: "Clockwork",
             dependencies: [
                 "Gardener",
+
+                "Text",
             ]
         ),
         .target(

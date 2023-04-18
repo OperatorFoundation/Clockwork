@@ -1,13 +1,13 @@
 //
-//  ClockworkBase.swift
+//  HParser.swift
 //
 //
-//  Created by Dr. Brandon Wiley on 2/19/23.
+//  Created by Dr. Brandon Wiley on 3/11/23.
 //
 
 import Foundation
 
-public class PythonParser: Parser
+public class HParser: Parser
 {
     public required init()
     {
@@ -15,7 +15,7 @@ public class PythonParser: Parser
 
     public func findImports(_ source: String) throws -> [String]
     {
-        let regex = try Regex("import [A-Za-z0-9]+")
+        let regex = try Regex("#include [<\"][A-Za-z0-9]+[>\"]")
         return source.ranges(of: regex).map
         {
             range in
@@ -27,26 +27,12 @@ public class PythonParser: Parser
 
     public func findClassName(_ sourceURL: URL, _ source: String) throws -> String
     {
-        let regex = try Regex("class [A-Za-z0-9]+")
-        let ranges = source.ranges(of: regex)
-        guard ranges.count == 1 else
-        {
-            if ranges.count == 0
-            {
-                throw ClockworkSpacetimeError.noMatches
-            }
-            else
-            {
-                throw ClockworkSpacetimeError.tooManyMatches
-            }
-        }
-
-        return String(source[ranges[0]].split(separator: " ")[1])
+        return sourceURL.deletingPathExtension().lastPathComponent
     }
 
     public func findFunctions(_ source: String) throws -> [Function]
     {
-        let regex = try Regex("^[ \\t]*def [^_][^\\(]+([^\\)]).*:$")
+        let regex = try Regex("^[ \\t]*[A-Za-z0-9_]+ [A-Za-z0-9_]+(.+);$")
         let lines = source.components(separatedBy: "\n").map { String($0) }
         let goodLines = lines.filter
         {
@@ -60,8 +46,7 @@ public class PythonParser: Parser
         {
             goodLine in
 
-            let parts = goodLine.components(separatedBy: " def ")
-            return parts[1]
+            return goodLine.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
         return goodParts.compactMap
@@ -85,21 +70,12 @@ public class PythonParser: Parser
 
     public func findFunctionName(_ function: String) throws -> String
     {
-        return String(function.split(separator: "(")[0])
+        let afterReturnType = String(function.components(separatedBy: " ")[1])
+        return String(afterReturnType.split(separator: "(")[0])
     }
 
     public func findParameters(_ function: String) throws -> [FunctionParameter]
     {
-        guard function.firstIndex(of: "@") == nil else
-        {
-            throw ClockworkSpacetimeError.badFunctionFormat
-        }
-
-        guard function.firstIndex(of: "_") == nil else
-        {
-            throw ClockworkSpacetimeError.badFunctionFormat
-        }
-
         guard let parameterStart = function.firstIndex(of: "(") else
         {
             throw ClockworkSpacetimeError.badFunctionFormat
@@ -122,35 +98,33 @@ public class PythonParser: Parser
         {
             part in
 
-            guard part != "self" else
-            {
-                return nil
-            }
-
-            let subparts = part.split(separator: ": ")
+            let subparts = part.split(separator: " ")
             guard subparts.count == 2 else
             {
                 throw ClockworkError.badFunctionFormat
             }
 
-            let name = String(subparts[0])
-            let type = String(subparts[1])
+            let type = String(subparts[0])
+            let name = String(subparts[1])
             return FunctionParameter(name: name, type: type)
         }
     }
 
     public func findFunctionReturnType(_ function: String) throws -> String?
     {
-        guard function.firstIndex(of: "-") != nil else
+        let result = String(function.components(separatedBy: " ")[0])
+        if result == "void"
         {
             return nil
         }
-
-        return String(function.split(separator: "-> ")[1])
+        else
+        {
+            return result
+        }
     }
 
     public func findFunctionThrowing(_ function: String) throws -> Bool
     {
-        return true
+        return false
     }
 }

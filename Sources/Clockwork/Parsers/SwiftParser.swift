@@ -25,7 +25,7 @@ public class SwiftParser: Parser
         }
     }
 
-    public func findClassName(_ source: String) throws -> String
+    public func findClassName(_ sourceURL: URL, _ source: String) throws -> String
     {
         let regex = try Regex("class [A-Za-z0-9]+")
         let ranges = source.ranges(of: regex)

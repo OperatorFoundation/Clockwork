@@ -57,6 +57,18 @@ extension CommandLine
         @Option(help: "directory to output generated Client.py file")
         var pythonClient: String?
 
+        @Option(help: "directory to output generated Messages.h file")
+        var cMessages: String?
+
+        @Option(help: "directory to output generated Server.c file")
+        var cServer: String?
+
+        @Option(help: "directory to output generated Messages.hpp/.cpp files")
+        var cppMessages: String?
+
+        @Option(help: "directory to output generated Server.hpp/.cpp files")
+        var cppServer: String?
+
         mutating public func run() throws
         {
             let configURL = URL(fileURLWithPath: config)
@@ -69,7 +81,7 @@ extension CommandLine
                 }
             }
 
-            let clockworkConfig = ClockworkConfig(source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage)
+            let clockworkConfig = ClockworkConfig(source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage, cMessages: cMessages, cServer: cServer, cppMessages: cppMessages, cppServer: cppServer)
             try clockworkConfig.save(url: configURL)
         }
     }
@@ -97,6 +109,18 @@ extension CommandLine
 
                 case "py":
                     parser = PythonParser()
+
+                case "h":
+                    parser = HParser()
+
+                case "c":
+                    parser = CParser()
+
+                case "hpp":
+                    parser = HppParser()
+
+                case "cpp":
+                    parser = CppParser()
 
                 default:
                     throw ClockworkCommandLineError.noParser(sourceURL.pathExtension)
@@ -155,6 +179,50 @@ extension CommandLine
                 let outputURL = URL(fileURLWithPath: swiftServer)
                 clockworkSwift.generateServer(sourceURL, outputURL)
             }
+
+            let clockworkC = CGenerator(parser: parser)
+
+            if (config.cMessages != nil) || (config.cServer != nil)
+            {
+                guard (config.cMessages != nil) && (config.cServer != nil) else
+                {
+                    throw ClockworkCommandLineError.serverAndMessagesRequiredEachOther
+                }
+            }
+
+            if let cMessages = config.cMessages
+            {
+                let outputURL = URL(fileURLWithPath: cMessages)
+                clockworkC.generateMessages(sourceURL, outputURL)
+            }
+
+            if let cServer = config.cServer
+            {
+                let outputURL = URL(fileURLWithPath: cServer)
+                clockworkC.generateServer(sourceURL, outputURL)
+            }
+
+            let clockworkCpp = CppGenerator(parser: parser)
+
+            if (config.cppMessages != nil) || (config.cppServer != nil)
+            {
+                guard (config.cppMessages != nil) && (config.cppServer != nil) else
+                {
+                    throw ClockworkCommandLineError.serverAndMessagesRequiredEachOther
+                }
+            }
+
+            if let cppMessages = config.cppMessages
+            {
+                let outputURL = URL(fileURLWithPath: cppMessages)
+                clockworkC.generateMessages(sourceURL, outputURL)
+            }
+
+            if let cppServer = config.cppServer
+            {
+                let outputURL = URL(fileURLWithPath: cppServer)
+                clockworkCpp.generateServer(sourceURL, outputURL)
+            }
         }
     }
 }
@@ -163,6 +231,7 @@ public enum ClockworkCommandLineError: Error
 {
     case noParser(String)
     case packageRequired
+    case serverAndMessagesRequiredEachOther
 }
 
 CommandLine.main()

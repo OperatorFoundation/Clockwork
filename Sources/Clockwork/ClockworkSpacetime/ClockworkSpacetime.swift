@@ -23,7 +23,7 @@ public class ClockworkSpacetime
     {
         let sourceURL = URL(fileURLWithPath: source)
         let source = try String(contentsOf: sourceURL)
-        let className = try self.parser.findClassName(source)
+        let className = try self.parser.findClassName(sourceURL, source)
 
         let functions = try self.parser.findFunctions(source)
 

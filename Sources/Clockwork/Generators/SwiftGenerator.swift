@@ -1,5 +1,5 @@
 //
-//  Clockwork.swift
+//  SwiftGenerator.swift
 //  
 //
 //  Created by Dr. Brandon Wiley on 1/5/23.
@@ -24,7 +24,7 @@ public class SwiftGenerator
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
+            let className = try self.parser.findClassName(input, source)
             let imports = try self.parser.findImports(source)
             let functions = try self.parser.findFunctions(source)
 
@@ -46,7 +46,7 @@ public class SwiftGenerator
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
+            let className = try self.parser.findClassName(input, source)
             let imports = try self.parser.findImports(source)
             let functions = try self.parser.findFunctions(source)
 
@@ -68,7 +68,7 @@ public class SwiftGenerator
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
+            let className = try self.parser.findClassName(input, source)
             let imports = try self.parser.findImports(source)
             let functions = try self.parser.findFunctions(source)
 

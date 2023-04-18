@@ -1,5 +1,5 @@
 //
-//  ClockworkPython.swift
+//  PythonGenerator.swift
 //
 //
 //  Created by Dr. Brandon Wiley on 2/15/23.
@@ -24,7 +24,7 @@ public class PythonGenerator
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
+            let className = try self.parser.findClassName(input, source)
 
             let functions = try self.parser.findFunctions(source)
 
@@ -46,7 +46,7 @@ public class PythonGenerator
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
+            let className = try self.parser.findClassName(input, source)
 
             let functions = try self.parser.findFunctions(source)
 
@@ -68,7 +68,7 @@ public class PythonGenerator
         do
         {
             let source = try String(contentsOf: input)
-            let className = try self.parser.findClassName(source)
+            let className = try self.parser.findClassName(input, source)
 
             let functions = try self.parser.findFunctions(source)
 

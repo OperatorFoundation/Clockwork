@@ -31,6 +31,7 @@ struct CommandLine: ParsableCommand
     mutating public func run() throws
     {
         print("Clockwork \(source) \(interactionsOutput) \(moduleOutput) \(universeOutput)")
+
         let parser = SwiftParser()
         let clockwork = ClockworkSpacetime(parser: parser)
         try clockwork.generate(source: source, interactionsOutput: interactionsOutput, moduleOutput: moduleOutput, universeOutput: universeOutput)
