@@ -115,7 +115,7 @@ public class KotlinGenerator
 
         import kotlinx.serialization.Serializable
 
-        @Serializable data class \(className)Error(val message: String): Exception()
+        @Serializable data class \(className)Error(override val message: String): Exception()
         {
             override fun toString(): String
             {
@@ -202,12 +202,12 @@ public class KotlinGenerator
     {
         if function.parameters.isEmpty
         {
-            return "    @Serializable data class \(function.name.capitalized)Request() : \(className.capitalized)Request()"
+            return "    @Serializable data class \(function.name.capitalized)Request() : \(className)Request()"
         }
         else
         {
             let requestParameters = generateRequestParameters(function)
-            return "    @Serializable data class \(function.name.capitalized)Request(\(requestParameters)) : \(className.capitalized)Request()"
+            return "    @Serializable data class \(function.name.capitalized)Request(\(requestParameters)) : \(className)Request()"
         }
     }
 
@@ -221,11 +221,11 @@ public class KotlinGenerator
     {
         if let returnType = function.returnType
         {
-            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType))) : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response(val value: \(kotlinizeType(returnType))) : \(className)Response()"
         }
         else
         {
-            return "    @Serializable data class \(function.name.capitalized)Response() : \(className.capitalized)Response()"
+            return "    @Serializable data class \(function.name.capitalized)Response() : \(className)Response()"
         }
     }
 
@@ -295,21 +295,26 @@ public class KotlinGenerator
         if function.returnType == nil
         {
             returnHandler = """
-                        return
+            return
             """
         }
         else
         {
             returnHandler = """
-                        return response.value
+            return response.value
             """
         }
 
         return """
             {
-                val message = \(function.name.capitalized)Request\(structHandler)
-                val data = Json.encodeToString(message).toByteArray()
-                if (!this.connection.writeWithLengthPrefix(data, 64))
+                val message = \(className)Request.\(function.name.capitalized)Request\(structHandler)
+                val requestJSONString = Json.encodeToString(message)
+                println("Created a kotlin friendly JSON request:\\n$requestJSONString")
+                val normalizedRequestJsonString = "{\\"\(function.name.capitalized)Request\\":{\\"value\\":$requestJSONString}}"
+                println("Created a swift friendly JSON request:\\n$normalizedRequestJsonString")
+                val requestData = normalizedRequestJsonString.toByteArray()
+        
+                if (!this.connection.writeWithLengthPrefix(requestData, 64))
                 {
                     throw \(className)WriteFailedException()
                 }
@@ -322,8 +327,27 @@ public class KotlinGenerator
 
                 try
                 {
-                    val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(responseData.decodeToString())
-        \(returnHandler)
+                    val normalizedResponseJSONString = responseData.decodeToString()
+                    println("Received a response:\\n$normalizedResponseJSONString")
+
+                    if (normalizedResponseJSONString.contains(\"\(function.name.capitalized)Response\", ignoreCase = true))
+                    {
+                        val firstColonIndex = normalizedResponseJSONString.indexOf(":")
+                        if (firstColonIndex < 0)
+                        {
+                            throw WreathFrontendBadReturnTypeException()
+                        }
+
+                        val denormalizedResponseJSONString = normalizedResponseJSONString.slice(firstColonIndex + 1 until normalizedResponseJSONString.length - 1)
+                        println("Converted response to Kotlin friendly JSON:\\n$denormalizedResponseJSONString")
+                        val response = Json.decodeFromString<\(className)Response.\(function.name.capitalized)Response>(denormalizedResponseJSONString)
+
+                        \(returnHandler)
+                    }
+                    else
+                    {
+                        throw WreathFrontendBadReturnTypeException()
+                    }
                 }
                 catch(error: Exception)
                 {

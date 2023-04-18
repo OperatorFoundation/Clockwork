@@ -196,7 +196,7 @@ public class SwiftGenerator
         public class \(className)Client
         {
             let connection: TransmissionTypes.Connection
-            let lock: DispatchSemaphore(value: 1)
+            let lock = DispatchSemaphore(value: 1)
 
             public init(connection: TransmissionTypes.Connection)
             {
@@ -298,6 +298,8 @@ public class SwiftGenerator
                         {
                             throw \(className)ServerError.readFailed
                         }
+        
+                        print("Received a request:\\n\\(requestData.string)")
 
                         let decoder = JSONDecoder()
                         let request = try decoder.decode(\(className)Request.self, from: requestData)
@@ -314,8 +316,9 @@ public class SwiftGenerator
                         {
                             let response = \(className)Error(error.localizedDescription)
                             let encoder = JSONEncoder()
-                            let data = try encoder.encode(response)
-                            let _ = connection.writeWithLengthPrefix(data: data, prefixSizeInBits: 64)
+                            let responseData = try encoder.encode(response)
+                            print("Sending a response:\\n\\(responseData.string)")
+                            let _ = connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
                         }
                         catch
                         {
@@ -364,6 +367,8 @@ public class SwiftGenerator
                                         let response = try \(className)Response.\(function.name.capitalized)Response
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -378,6 +383,8 @@ public class SwiftGenerator
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -392,9 +399,11 @@ public class SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request:
                                         let result = try self.handler.\(function.name)()
-                                        let response = \(className)Response.\(function.name.capitalized)Response(result)
+                                        let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -406,9 +415,11 @@ public class SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request:
                                         let result = self.handler.\(function.name)()
-                                        let response = \(className)Response.\(function.name.capitalized)Reponse(result)
+                                        let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -432,6 +443,8 @@ public class SwiftGenerator
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -446,6 +459,8 @@ public class SwiftGenerator
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -460,9 +475,11 @@ public class SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request(let value):
                                         let result = try self.handler.\(function.name)(\(argumentList))
-                                        let response = try \(className)Response.\(function.name.capitalized)Response(result)
+                                        let response = try \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -474,9 +491,11 @@ public class SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request(let value):
                                         let result = self.handler.\(function.name)(\(argumentList))
-                                        let response = \(className)Response.\(function.name.capitalized)Response(result)
+                                        let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = JSONEncoder()
                                         let responseData = try encoder.encode(response)
+                                        print("Sending a response:\\n\\(responseData.string)")
+                
                                         guard connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
                                         {
                                             throw \(className)ServerError.writeFailed
@@ -506,7 +525,7 @@ public class SwiftGenerator
         }
         else
         {
-            return "    case \(function.name.capitalized)Request(\(function.name.capitalized))"
+            return "    case \(function.name.capitalized)Request(value: \(function.name.capitalized))"
         }
     }
 
@@ -520,11 +539,11 @@ public class SwiftGenerator
     {
         if let returnType = function.returnType
         {
-            return "    case \(function.name.capitalized)Response(\(returnType))"
+            return "case \(function.name.capitalized)Response(value: \(returnType))"
         }
         else
         {
-            return "    case \(function.name.capitalized)Response"
+            return "case \(function.name.capitalized)Response"
         }
     }
 
@@ -621,7 +640,7 @@ public class SwiftGenerator
         {
             let arguments = function.parameters.map { self.generateArgument($0) }
             let argumentList = arguments.joined(separator: ", ")
-            structHandler = "(\(function.name.capitalized)(\(argumentList)))"
+            structHandler = "(value: \(function.name.capitalized)(\(argumentList)))"
         }
 
         let returnHandler: String
