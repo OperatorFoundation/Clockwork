@@ -14,10 +14,6 @@ public protocol Parser
     func findImports(_ source: String) throws -> [String]
     func findClassName(_ sourceURL: URL, _ source: String) throws -> String
     func findFunctions(_ source: String) throws -> [Function]
-    func findFunctionName(_ function: String) throws -> String
-    func findParameters(_ function: String) throws -> [FunctionParameter]
-    func findFunctionReturnType(_ function: String) throws -> String?
-    func findFunctionThrowing(_ function: String) throws -> Bool
 }
 
 public struct Function

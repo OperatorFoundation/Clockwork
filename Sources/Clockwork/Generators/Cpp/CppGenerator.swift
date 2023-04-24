@@ -19,6 +19,45 @@ public class CppGenerator
         self.parser = parser
     }
 
+    func makeRequestCaseName(_ className: String, _ function: Function) -> String
+    {
+        return "\(className)\(function.name.capitalized)Request"
+    }
+
+    func makeResponseCaseName(_ className: String, _ function: Function) -> String
+    {
+        return "\(className)\(function.name.capitalized)Response"
+    }
+
+    func makeRequestName(_ className: String) -> String
+    {
+        return "\(className)Request"
+    }
+
+    func makeResponseName(_ className: String) -> String
+    {
+        return "\(className)Response"
+    }
+
+    func makeMethodName(_ className: String, _ function: Function) -> String
+    {
+        return "\(function.name)"
+    }
+
+    func makeHandlerName(_ className: String) -> String
+    {
+        return "\(className)Handler"
+    }
+
+    func makeModuleName(_ className: String) -> String
+    {
+        return "\(className)Module"
+    }
+
+    func makeUniverseName(_ className: String) -> String
+    {
+        return "\(className)Universe"
+    }
 
     func generateServerArgument(_ parameter: FunctionParameter) -> String
     {
@@ -33,102 +72,7 @@ public class CppGenerator
 
     func generateRequestParameter(_ parameter: FunctionParameter) -> String
     {
-        return "\(parameter.name)"
-    }
-
-    func generateParameter(_ parameter: FunctionParameter) -> String
-    {
-        return "\(parameter.name)"
-    }
-
-    func generateFunctions(_ className: String, _ functions: [Function]) throws -> String
-    {
-        let results = try functions.compactMap { try self.generateFunction(className, $0, includeDefault: functions.count > 1) }
-        return results.joined(separator: "\n\n")
-    }
-
-    func generateFunction(_ className: String, _ function: Function, includeDefault: Bool) throws -> String
-    {
-        let signature = self.generateFunctionSignature(function)
-        let body = self.generateFunctionBody(className, function, includeDefault: includeDefault)
-
-        return """
-        \(signature)
-        \(body)
-        """
-    }
-
-    func generateFunctionSignature( _ function: Function) -> String
-    {
-        if function.parameters.isEmpty
-        {
-            return "    def \(function.name)(self):"
-        }
-        else
-        {
-            let parameters = function.parameters.map { self.generateParameter($0) }
-            let parameterList = parameters.joined(separator: ", ")
-
-            return "    def \(function.name)(self, \(parameterList)):"
-        }
-    }
-
-    func generateFunctionBody(_ className: String, _ function: Function, includeDefault: Bool) -> String
-    {
-        let structHandler: String
-        if function.parameters.isEmpty
-        {
-            structHandler = "()"
-        }
-        else
-        {
-            let arguments = function.parameters.map { self.generateArgument($0) }
-            let argumentList = arguments.joined(separator: ", ")
-            structHandler = "(\(argumentList))"
-        }
-
-        let returnHandler: String
-        if function.returnType == nil
-        {
-            returnHandler = """
-                    if isinstance(response, \(function.name.capitalized)Response):
-                        return
-            """
-        }
-        else
-        {
-            returnHandler = """
-                    if isistance(response, \(function.name.capitalized)Response):
-                        return response.value
-            """
-        }
-
-        let defaultHandler: String
-        if includeDefault
-        {
-            defaultHandler = """
-                    else:
-                        raise Exception("bad return type")
-            """
-        }
-        else
-        {
-            defaultHandler = ""
-        }
-
-        return """
-                message = \(function.name.capitalized)Request\(structHandler)
-                if not self.connection.write(message):
-                    raise Exception("write failed")
-
-                response = self.connection.read()
-                if not response:
-                    raise Exception("read failed")
-
-        \(returnHandler)
-        \(defaultHandler)
-        """
-
+        return "    \(parameter.type) \(parameter.name);"
     }
 
     func generateArgument(_ argument: FunctionParameter) -> String

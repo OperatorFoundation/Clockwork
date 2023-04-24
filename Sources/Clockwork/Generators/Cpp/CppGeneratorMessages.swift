@@ -49,6 +49,8 @@ extension CppGenerator
 
         let dateString = formatter.string(from: date)
 
+        let requestName = self.makeRequestName(className)
+        let responseName = self.makeResponseName(className)
         let requestEnums = self.generateRequestEnumsText(className, functions)
         let responseEnums = self.generateResponseEnumsText(className, functions)
 
@@ -60,22 +62,36 @@ extension CppGenerator
         //  Created by Clockwork on \(dateString).
         //
 
-        typedef struct \(className)Error
+        class \(className)Error
         {
           char *message;
-        } \(className)Error_t;
+        }
 
-        typedef struct \(className)Request
+        class \(requestName)
         {
-            int type;
-            void *body;
-        } \(className)Request_t;
+            public:
+                \(requestName)(int type, void *body)
+                {
+                    this.type = type;
+                    this.body = body;
+                }
 
-        typedef struct \(className)Response
+                int type;
+                void *body;
+        }
+
+        class \(responseName)
         {
-            int type;
-            void *body;
-        } \(className)Response_t;
+            public:
+                \(responseName)(int type, void *body)
+                {
+                    this.type = type;
+                    this.body = body;
+                }
+
+                int type;
+                void *body;
+        }
 
         \(requestEnums)
 
@@ -122,25 +138,76 @@ extension CppGenerator
         }
         else
         {
-            let requestParameters = generateRequestParameters(function)
+            let requestClassName = self.makeRequestCaseName(className, function)
+            let constructorParams = self.generateRequestConstructorParameters(function)
+            let requestSetters = generateRequestSetters(function)
+            let requestParameters = generateRequestEnumParameters(function)
+
             return """
-            typedef struct \(function.name.capitalized)Request
+            class \(requestClassName)
             {
+                public:
+                    \(requestClassName)(\(constructorParams))
+                    {
+            \(requestSetters)
+                    }
+
             \(requestParameters)
-            } \(function.name.capitalized)Request_t;
+            }
             """
         }
     }
 
+    func generateRequestEnumParameters(_ function: Function) -> String
+    {
+        let enums = function.parameters.map { self.generateRequestEnumParameter($0) }
+        return enums.joined(separator: "\n")
+    }
+
+    func generateRequestEnumParameter(_ parameter: FunctionParameter) -> String
+    {
+        return "        \(parameter.type) \(parameter.name);"
+    }
+
+    func generateRequestConstructorParameters(_ function: Function) -> String
+    {
+        let enums = function.parameters.map { self.generateRequestConstructorParameter($0) }
+        return enums.joined(separator: ", ")
+    }
+
+    func generateRequestConstructorParameter(_ parameter: FunctionParameter) -> String
+    {
+        return "\(parameter.type) \(parameter.name)"
+    }
+
+    func generateRequestSetters(_ function: Function) -> String
+    {
+        let enums = function.parameters.map { self.generateRequestSetter($0) }
+        return enums.joined(separator: "\n")
+    }
+
+    func generateRequestSetter(_ parameter: FunctionParameter) -> String
+    {
+        return "            this.\(parameter.name) = \(parameter.name);"
+    }
+
     func generateResponseEnumCase(_ className: String, _ function: Function) -> String?
     {
+        let responseCaseName = self.makeResponseCaseName(className, function)
+
         if let returnType = function.returnType
         {
             return """
-            typedef struct \(function.name.capitalized)Response
+            class \(responseCaseName)
             {
-                \(returnType) \(function.name)
-            } \(function.name.capitalized)Response_t;
+                public:
+                    \(responseCaseName)(\(returnType) value)
+                    {
+                        this.value = value;
+                    }
+
+                    \(returnType) value;
+            }
             """
         }
         else

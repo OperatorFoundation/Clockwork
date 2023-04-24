@@ -12,6 +12,10 @@ import Text
 
 public class ArduinoLibraryFileList
 {
+    public init()
+    {
+    }
+
     public func makeList(directory: URL) throws -> [URL]
     {
         let libraryName = directory.lastPathComponent
@@ -24,26 +28,31 @@ public class ArduinoLibraryFileList
         {
             line in
 
-            return line.contains("#include") && line.contains("\"")
+            return line.containsSubstring("#include \"")
         }
 
-        let includes: [URL] = lines.compactMap
+        let filenames: [Text] = lines.map
         {
             line in
 
             let rightOfOpenQuote = line.split("\"")[1]
-            let leftOfCloseQuote = rightOfOpenQuote.split("\"")[0]
-            let filename = leftOfCloseQuote
-
-            let includedFilePath = directory.appending(component: filename, isDirectory: false)
-            guard File.exists(includedFilePath.path) else
-            {
-                return nil
-            }
-
-            return includedFilePath
+            return rightOfOpenQuote.split("\"")[0]
         }
 
-        return includes
+        let filepaths: [URL] = filenames.map
+        {
+            filename in
+
+            return directory.appending(component: filename, isDirectory: false)
+        }
+
+        let goodFilepaths: [URL] = filepaths.filter
+        {
+            url in
+
+            return File.exists(url.path)
+        }
+
+        return goodFilepaths
     }
 }

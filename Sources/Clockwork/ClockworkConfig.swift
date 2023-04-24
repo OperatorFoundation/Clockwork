@@ -9,6 +9,7 @@ import Foundation
 
 public class ClockworkConfig: Codable
 {
+    public let batch: Bool
     public let source: String
     public let swiftMessages: String?
     public let kotlinMessages: String?
@@ -23,9 +24,12 @@ public class ClockworkConfig: Codable
     public let cServer: String?
     public let cppMessages: String?
     public let cppServer: String?
+    public let cppModule: String?
+    public let cppUniverse: String?
 
-    public init(source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil, kotlinPackage: String? = nil, cMessages: String? = nil, cServer: String? = nil, cppMessages: String? = nil, cppServer: String? = nil)
+    public init(batch: Bool, source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil, kotlinPackage: String? = nil, cMessages: String? = nil, cServer: String? = nil, cppMessages: String? = nil, cppServer: String? = nil, cppModule: String? = nil, cppUniverse: String? = nil)
     {
+        self.batch = batch
         self.source = source
         self.swiftMessages = swiftMessages
         self.kotlinMessages = kotlinMessages
@@ -40,6 +44,8 @@ public class ClockworkConfig: Codable
         self.cServer = cServer
         self.cppMessages = cppMessages
         self.cppServer = cppServer
+        self.cppModule = cppModule
+        self.cppUniverse = cppUniverse
     }
 }
 

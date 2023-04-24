@@ -7,6 +7,8 @@
 
 import Foundation
 
+import Text
+
 public class HppParser: Parser
 {
     public required init()
@@ -27,66 +29,112 @@ public class HppParser: Parser
 
     public func findClassName(_ sourceURL: URL, _ source: String) throws -> String
     {
-        let regex = try Regex("class [A-Za-z0-9]+")
-        let ranges = source.ranges(of: regex)
-        guard ranges.count == 1 else
-        {
-            if ranges.count == 0
-            {
-                throw ClockworkSpacetimeError.noMatches
-            }
-            else
-            {
-                throw ClockworkSpacetimeError.tooManyMatches
-            }
-        }
+        let text = Text(fromUTF8String: source)
 
-        return String(source[ranges[0]].split(separator: " ")[1])
+        let classLine = try text.substringRegex(try Regex("class [A-Za-z0-9]+"))
+        let (_, className) = try classLine.splitOn(" ") // Discard the "class " part
+        return className.toUTF8String()
     }
 
     public func findFunctions(_ source: String) throws -> [Function]
     {
-        var publicSource: String = String(source.components(separatedBy: "public:")[1])
+        let mtext = MutableText(fromUTF8String: source)
 
-        if publicSource.contains("private:")
-        {
-            publicSource = String(source.components(separatedBy: "private:")[0])
-        }
+        try mtext.becomeSplitOnTail("public:") // We want only the part after "public:"
+        try? mtext.becomeSplitOnHead("private:") // If there is a private: section, trim it off.
+        try? mtext.becomeSplitOnHead("protected:") // If there is a protected: section, trim it off.
 
-        if publicSource.contains("protected:")
-        {
-            publicSource = String(source.components(separatedBy: "protected:")[0])
-        }
+        let publicSource: Text = mtext.toText()
 
-        let regex = try Regex("^[ \\t]*[A-Za-z0-9_]+ [A-Za-z0-9_]+(.+);$")
-        let lines = publicSource.components(separatedBy: "\n").map { String($0) }
+        let regex = try Regex("^[ \\t]*[A-Za-z0-9_ ]+ [A-Za-z0-9_]+\\(.+\\)[ \\t]*[;{](//.*)?$")
+        let lines = publicSource.split("\n")
         let goodLines = lines.filter
         {
             line in
 
-            let range = line.ranges(of: regex)
-            return range.count > 0
+            line.containsRegex(regex)
         }
 
-        let goodParts = goodLines.map
+        let functions: [Function] = goodLines.compactMap
         {
-            goodLine in
+            functionText in
 
-            let parts = goodLine.components(separatedBy: " def ")
-            return parts[1]
-        }
+            if functionText.containsSubstring("__attribute__")
+            {
+                // Not actually a functiony
+                return nil
+            }
 
-        return goodParts.compactMap
-        {
-            function in
+            if functionText.containsSubstring("*")
+            {
+                // No pointers allowed
+                return nil
+            }
 
             do
             {
-                let name = try self.findFunctionName(function)
-                let parameters = try self.findParameters(function)
-                let returnType = try self.findFunctionReturnType(function)
-                let throwing = try self.findFunctionThrowing(function)
-                return Function(name: name, parameters: parameters, returnType: returnType, throwing: throwing)
+                let name = try self.findFunctionName(functionText)
+                let parameters = try self.findParameters(functionText)
+                let returnType = try self.findFunctionReturnType(functionText)
+                return Function(name: name, parameters: parameters, returnType: returnType, throwing: false)
+            }
+            catch
+            {
+                return nil
+            }
+        }
+
+        var seenEnums: Set<String> = Set<String>()
+        let uniqueFunctions: [Function] = functions.filter
+        {
+            function in
+
+            let enumName = function.name.capitalized
+            let seen = seenEnums.contains(enumName)
+            seenEnums.insert(enumName)
+            return !seen
+        }
+
+        return uniqueFunctions
+    }
+
+    func findFunctionName(_ function: Text) throws -> String
+    {
+        let mtext: MutableText = MutableText(fromText: function)
+        try mtext.becomeSplitOnHead("(") // Left of the (
+        try mtext.becomeSplitOnLastTail(" ") // Right of the space
+        return mtext.toUTF8String()
+    }
+
+    func findParameters(_ function: Text) throws -> [FunctionParameter]
+    {
+        let mtext: MutableText = MutableText(fromText: function)
+        try mtext.becomeSplitOnTail("(") // Right of the (
+        try mtext.becomeSplitOnHead(")") // Left of the )
+
+        if mtext.isEmpty()
+        {
+            return []
+        }
+
+        return mtext.split(", ").compactMap
+        {
+            part in
+
+            do
+            {
+                let (type, name) = try part.splitOnLast(" ") // We must split on the last space for types such as "unsigned int"
+
+                let mtype = MutableText(fromText: type)
+                let mname = MutableText(fromText: name)
+
+                if mname.startsWith("*")
+                {
+                    mtype.becomeAppended("*")
+                    try mname.becomeDropFirst()
+                }
+
+                return FunctionParameter(name: mname.toUTF8String(), type: mtype.toUTF8String())
             }
             catch
             {
@@ -95,61 +143,35 @@ public class HppParser: Parser
         }
     }
 
-    public func findFunctionName(_ function: String) throws -> String
+    func findFunctionReturnType(_ function: Text) throws -> String?
     {
-        return String(function.split(separator: "(")[0])
-    }
+        let mtext: MutableText = MutableText(fromText: function)
+        try mtext.becomeSplitOnHead("(")
 
-    public func findParameters(_ function: String) throws -> [FunctionParameter]
-    {
-        guard let parameterStart = function.firstIndex(of: "(") else
+        let (type, name) = try mtext.splitOnLast(" ")
+        let mtype: MutableText = MutableText(fromText: type)
+        mtype.becomeTrimmed()
+
+        if name.startsWith("*")
         {
-            throw ClockworkSpacetimeError.badFunctionFormat
+            mtype.becomeAppended("*")
         }
 
-        guard let parameterEnd = function.firstIndex(of: ")") else
-        {
-            throw ClockworkSpacetimeError.badFunctionFormat
-        }
-
-        if function.index(after: parameterStart) == parameterEnd
-        {
-            return []
-        }
-
-        let suffix = String(function.split(separator: "(")[1])
-        let prefix = String(suffix.split(separator: ")")[0])
-        let parts = prefix.split(separator: ", ").map { String($0) }
-        return try parts.compactMap
-        {
-            part in
-
-            let subparts = part.split(separator: " ")
-            guard subparts.count == 2 else
-            {
-                throw ClockworkError.badFunctionFormat
-            }
-
-            let type = String(subparts[0])
-            let name = String(subparts[1])
-            return FunctionParameter(name: name, type: type)
-        }
-    }
-
-    public func findFunctionReturnType(_ function: String) throws -> String?
-    {
-        let returnTypeAndName = String(function.split(separator: "(")[0])
-
-        guard returnTypeAndName.contains(" ") else
+        guard mtype != "void" else // A void return type in C++ means the function does not return anything, which we signify here with nil.
         {
             return nil
         }
 
-        return String(returnTypeAndName.split(separator: " ")[0])
-    }
+        if mtype.containsSubstring("virtual")
+        {
+            throw HppParserError.noVirtualFunctionsAllowed
+        }
 
-    public func findFunctionThrowing(_ function: String) throws -> Bool
-    {
-        return false
+        return mtype.toUTF8String()
     }
+}
+
+public enum HppParserError: Error
+{
+    case noVirtualFunctionsAllowed
 }
