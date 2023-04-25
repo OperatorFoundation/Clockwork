@@ -51,7 +51,7 @@ extension CppGenerator
 
         let dateString = formatter.string(from: date)
 
-        let handlerName = self.makeHandlerName(className)
+        let moduleName = self.makeModuleName(className)
         let requestName = self.makeRequestName(className)
         let responseName = self.makeResponseName(className)
 
@@ -63,23 +63,25 @@ extension CppGenerator
         //  Created by Clockwork on \(dateString).
         //
 
-        #include "\(includeFile)"
+        #ifndef \(className)Module_h_
+        #define \(className)Module_h_
+
+        #include <Arduino.h>
+        #include "Audio.h"
         #include "\(className)Messages.h"
 
-        class \(handlerName)
+        class \(moduleName)
         {
             public:
-                \(handlerName)(\(className) logic)
-                {
-                    this.logic = logic;
-                }
+                \(moduleName)(\(className) *component) : logic(component) {}
 
-                \(className) logic;
-                \(responseName) handle(\(requestName) request);
-        }
+                \(className) *logic;
+                \(responseName) *handle(\(requestName) *request);
+        };
+
+        #endif
         """
     }
-
 
     func generateModule(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
     {
@@ -99,7 +101,7 @@ extension CppGenerator
 
         let dateString = formatter.string(from: date)
 
-        let handlerName = self.makeHandlerName(className)
+        let moduleName = self.makeModuleName(className)
         let requestName = self.makeRequestName(className)
         let responseName = self.makeResponseName(className)
         let cases = self.generateModuleCases(className, functions)
@@ -114,15 +116,15 @@ extension CppGenerator
 
         #include "\(className)Module.h"
 
-        \(responseName) \(handlerName)::handle(\(requestName) request)
+        \(responseName) *\(moduleName)::handle(\(requestName) *request)
         {
-            switch (request.type)
+            switch (request->type)
             {
         \(cases)
             }
 
-            return returnValue;
-        }
+            return new \(responseName)(\(responseName)_ERROR, NULL);
+        };
         """
     }
 
@@ -134,7 +136,7 @@ extension CppGenerator
 
     func generateModuleCase(_ className: String, _ function: Function) -> String
     {
-        let caseName = self.generateTypeEnum(function)
+        let caseName = self.generateRequestTypeEnum(className, function)
         let requestName = self.makeRequestCaseName(className, function)
         let responseName = self.makeResponseName(className)
         let responseCaseName = self.makeResponseCaseName(className, function)
@@ -165,14 +167,17 @@ extension CppGenerator
         }
         else
         {
-            parametersCast = "\n            \(requestName) parameters = (\(requestName) *)request.body;"
+            parametersCast = "\(requestName) *parameters = (\(requestName) *)request->body;"
         }
 
         return """
-                case \(caseName):\(parametersCast)
-                    \(setResult)this.logic.\(methodName)(\(parameters))
-                    \(makeResponse)
-                    return new \(responseName)(\(caseName), \(resultParameter));
+                case \(caseName):
+                    {
+                        \(parametersCast)
+                        \(setResult)this->logic->\(methodName)(\(parameters));
+                        \(makeResponse)
+                        return new \(responseName)(\(caseName), \(resultParameter));
+                    }
         """
     }
 

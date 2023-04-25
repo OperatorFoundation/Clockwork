@@ -63,20 +63,23 @@ extension CppGenerator
         //  Created by Clockwork on \(dateString).
         //
 
+        #ifndef \(className)Universe_h_
+        #define \(className)Universe_h_
+
         #include "\(className)Messages.h"
+        #include "\(className)Module.h"
 
         class \(universeName)
         {
             public:
-                \(universeName)(\(moduleName) module)
-                {
-                    this.module = module;
-                }
+                \(universeName)(\(moduleName) *handler) : module(handler) {}
 
-                \(moduleName) module;
+                \(moduleName) *module;
 
         \(functions)
-        }
+        };
+
+        #endif
         """
     }
 
@@ -95,7 +98,7 @@ extension CppGenerator
         }
         else
         {
-            returnTypeText = "void "
+            returnTypeText = "void"
         }
 
         let parameterText: String
@@ -109,7 +112,7 @@ extension CppGenerator
             parameterText = parameters.joined(separator: ", ")
         }
 
-        return "        \(returnTypeText)\(function.name)(\(parameterText));"
+        return "        \(returnTypeText) \(function.name)(\(parameterText));"
     }
 
     func generateUniverse(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
@@ -203,20 +206,33 @@ extension CppGenerator
     func generateFunctionBody(_ className: String, _ function: Function) -> String
     {
         let requestName = self.makeRequestName(className)
-        let enumCaseName = self.generateTypeEnum(function)
+        let requestEnumCaseName = self.generateRequestTypeEnum(className, function)
         let requestCaseName = self.makeRequestCaseName(className, function)
         let responseName = self.makeResponseName(className)
         let responseCaseName = self.makeResponseCaseName(className, function)
 
-        let argumentList: String
+        let requestBodyInit: String
+        let requestBodyParameter: String
+        let requestBodyDelete: String
         if function.parameters.isEmpty
         {
-            argumentList = ""
+            requestBodyInit = ""
+            requestBodyParameter = "NULL"
+            requestBodyDelete = ""
         }
         else
         {
             let arguments = function.parameters.map { self.generateArgument($0) }
-            argumentList = arguments.joined(separator: ", ")
+            let argumentList = arguments.joined(separator: ", ")
+
+            requestBodyInit = """
+                \(requestCaseName) *requestBody = new \(requestCaseName)(\(argumentList));
+            """
+
+            requestBodyParameter = "(void *)requestBody"
+            requestBodyDelete = """
+                delete requestBody;
+            """
         }
 
         let returnHandler: String
@@ -227,19 +243,23 @@ extension CppGenerator
         else
         {
             returnHandler = """
-
-                \(responseCaseName) *result = (\(responseCaseName) *)response.body;
+                \(responseCaseName) *result = (\(responseCaseName) *)response->body;
                 return result->value;
             """
         }
 
         return """
-            \(requestCaseName) requestBody = new \(requestCaseName)(\(argumentList));
-            \(requestName) request = new \(requestName)(\(enumCaseName), (void *)&requestBody);
-            \(responseName) response = this.module.handle(request);
+            \(requestBodyInit)
+            \(requestName) *request = new \(requestName)(\(requestEnumCaseName), \(requestBodyParameter));
+            \(responseName) *response = this->module->handle(request);
             delete request;
-            delete requestBody;\(returnHandler)
+            \(requestBodyDelete)
+        \(returnHandler)
         """
+    }
 
+    func generateArgument(_ argument: FunctionParameter) -> String
+    {
+        return "\(argument.name)"
     }
 }

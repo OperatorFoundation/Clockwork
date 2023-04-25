@@ -44,11 +44,6 @@ public class CppGenerator
         return "\(function.name)"
     }
 
-    func makeHandlerName(_ className: String) -> String
-    {
-        return "\(className)Handler"
-    }
-
     func makeModuleName(_ className: String) -> String
     {
         return "\(className)Module"
@@ -57,36 +52,6 @@ public class CppGenerator
     func makeUniverseName(_ className: String) -> String
     {
         return "\(className)Universe"
-    }
-
-    func generateServerArgument(_ parameter: FunctionParameter) -> String
-    {
-        return "\(parameter.name)"
-    }
-
-    func generateRequestParameters(_ function: Function) -> String
-    {
-        let enums = function.parameters.map { self.generateRequestParameter($0) }
-        return enums.joined(separator: ", ")
-    }
-
-    func generateRequestParameter(_ parameter: FunctionParameter) -> String
-    {
-        return "    \(parameter.type) \(parameter.name);"
-    }
-
-    func generateArgument(_ argument: FunctionParameter) -> String
-    {
-        return "\(argument.name)"
-    }
-
-    func generatePythonMessages(_ outputURL: URL, _ className: String, _ functions: [Function]) throws
-    {
-        print("Generating \(className)Messages.py...")
-
-        let outputFile = outputURL.appending(component: "\(className)Messages.py")
-        let result = try self.generateMessagesText(className, functions)
-        try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 }
 

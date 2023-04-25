@@ -62,40 +62,47 @@ extension CppGenerator
         //  Created by Clockwork on \(dateString).
         //
 
+        #ifndef \(className)Messages_h_
+        #define \(className)Messages_h_
+
+        #include <Arduino.h>
+
         class \(className)Error
         {
           char *message;
-        }
+        };
 
         class \(requestName)
         {
             public:
                 \(requestName)(int type, void *body)
                 {
-                    this.type = type;
-                    this.body = body;
+                    this->type = type;
+                    this->body = body;
                 }
 
                 int type;
                 void *body;
-        }
+        };
 
         class \(responseName)
         {
             public:
                 \(responseName)(int type, void *body)
                 {
-                    this.type = type;
-                    this.body = body;
+                    this->type = type;
+                    this->body = body;
                 }
 
                 int type;
                 void *body;
-        }
+        };
 
         \(requestEnums)
 
         \(responseEnums)
+
+        #endif
         """
     }
 
@@ -108,7 +115,8 @@ extension CppGenerator
 
     func generateRequestTypeEnums(_ className: String, _ functions: [Function]) -> String
     {
-        let typeEnums = functions.map { self.generateTypeEnum($0) }
+        let requestName = self.makeRequestName(className)
+        let typeEnums = ["\(requestName)_ERROR"] + functions.map { self.generateRequestTypeEnum(className, $0) }
         return "enum \(className)RequestType {\(typeEnums.joined(separator: ", "))};"
     }
 
@@ -121,13 +129,21 @@ extension CppGenerator
 
     func generateResponseTypeEnums(_ className: String, _ functions: [Function]) -> String
     {
-        let typeEnums = functions.map { self.generateTypeEnum($0) }
+        let responseName = self.makeResponseName(className)
+        let typeEnums = ["\(responseName)_ERROR"] + functions.map { self.generateResponseTypeEnum(className, $0) }
         return "enum \(className)ResponseType {\(typeEnums.joined(separator: ", "))};"
     }
 
-    func generateTypeEnum(_ function: Function) -> String
+    func generateRequestTypeEnum(_ className: String, _ function: Function) -> String
     {
-        return function.name.uppercased()
+        let requestName = self.makeRequestName(className)
+        return "\(requestName)_\(function.name.uppercased())"
+    }
+
+    func generateResponseTypeEnum(_ className: String, _ function: Function) -> String
+    {
+        let responseName = self.makeResponseName(className)
+        return "\(responseName)_\(function.name.uppercased())"
     }
 
     func generateRequestEnumCase(_ className: String, _ function: Function) -> String?
@@ -153,7 +169,7 @@ extension CppGenerator
                     }
 
             \(requestParameters)
-            }
+            };
             """
         }
     }
@@ -188,7 +204,7 @@ extension CppGenerator
 
     func generateRequestSetter(_ parameter: FunctionParameter) -> String
     {
-        return "            this.\(parameter.name) = \(parameter.name);"
+        return "            this->\(parameter.name) = \(parameter.name);"
     }
 
     func generateResponseEnumCase(_ className: String, _ function: Function) -> String?
@@ -203,11 +219,11 @@ extension CppGenerator
                 public:
                     \(responseCaseName)(\(returnType) value)
                     {
-                        this.value = value;
+                        this->value = value;
                     }
 
                     \(returnType) value;
-            }
+            };
             """
         }
         else

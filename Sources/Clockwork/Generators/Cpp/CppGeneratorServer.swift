@@ -260,4 +260,8 @@ extension CppGenerator
         }
     }
 
+    func generateServerArgument(_ parameter: FunctionParameter) -> String
+    {
+        return "\(parameter.name)"
+    }
 }
