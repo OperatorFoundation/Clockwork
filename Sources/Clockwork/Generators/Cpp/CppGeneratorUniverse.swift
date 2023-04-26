@@ -226,35 +226,45 @@ extension CppGenerator
             let argumentList = arguments.joined(separator: ", ")
 
             requestBodyInit = """
-                \(requestCaseName) *requestBody = new \(requestCaseName)(\(argumentList));
+            \(requestCaseName) *requestBody = new \(requestCaseName)(\(argumentList));
             """
 
             requestBodyParameter = "(void *)requestBody"
             requestBodyDelete = """
-                delete requestBody;
+            delete requestBody;
             """
         }
 
+        let responseCast: String
+        let returnValue: String
+        let deleteResponseBody: String
         let returnHandler: String
-        if function.returnType == nil
+        if let returnType = function.returnType
         {
-            returnHandler = ""
+            responseCast = "\(responseCaseName) *result = (\(responseCaseName) *)response->body;"
+            returnValue = "\(returnType) returnValue = result->value; // Because this is a value type, this will be a copy."
+            deleteResponseBody = "delete result;"
+            returnHandler = "return returnValue;"
         }
         else
         {
-            returnHandler = """
-                \(responseCaseName) *result = (\(responseCaseName) *)response->body;
-                return result->value;
-            """
+            responseCast = ""
+            returnValue = ""
+            deleteResponseBody = ""
+            returnHandler = ""
         }
 
         return """
             \(requestBodyInit)
             \(requestName) *request = new \(requestName)(\(requestEnumCaseName), \(requestBodyParameter));
             \(responseName) *response = this->module->handle(request);
+            \(responseCast)
+            \(returnValue)
             delete request;
             \(requestBodyDelete)
-        \(returnHandler)
+            \(deleteResponseBody)
+            delete response;
+            \(returnHandler)
         """
     }
 

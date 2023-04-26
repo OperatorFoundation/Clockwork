@@ -67,11 +67,6 @@ extension CppGenerator
 
         #include <Arduino.h>
 
-        class \(className)Error
-        {
-          char *message;
-        };
-
         class \(requestName)
         {
             public:
@@ -115,8 +110,7 @@ extension CppGenerator
 
     func generateRequestTypeEnums(_ className: String, _ functions: [Function]) -> String
     {
-        let requestName = self.makeRequestName(className)
-        let typeEnums = ["\(requestName)_ERROR"] + functions.map { self.generateRequestTypeEnum(className, $0) }
+        let typeEnums = functions.map { self.generateRequestTypeEnum(className, $0) }
         return "enum \(className)RequestType {\(typeEnums.joined(separator: ", "))};"
     }
 
@@ -219,6 +213,7 @@ extension CppGenerator
                 public:
                     \(responseCaseName)(\(returnType) value)
                     {
+                        // value is a value type and not a pointer, so this->value should be a copy.
                         this->value = value;
                     }
 
