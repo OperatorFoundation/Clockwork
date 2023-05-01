@@ -53,6 +53,12 @@ public class CppGenerator
     {
         return "\(className)Universe"
     }
+
+    func makeErrorName(_ className: String) -> String
+    {
+        let responseName = self.makeResponseName(className)
+        return "\(responseName)_ERROR"
+    }
 }
 
 public enum CppGeneratorError: Error

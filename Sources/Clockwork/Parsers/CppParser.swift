@@ -119,8 +119,10 @@ public class CppParser: Parser
 
         let suffix = String(function.split(separator: "(")[1])
         let prefix = String(suffix.split(separator: ")")[0])
-        let parts = prefix.split(separator: ", ").map { String($0) }
-        return try parts.compactMap
+        let parts = prefix.split(separator: ",").map { String($0) }
+        return try parts
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .compactMap
         {
             part in
 

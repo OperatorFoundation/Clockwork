@@ -145,17 +145,20 @@ extension CppGenerator
         let setResult: String
         let makeResponse: String
         let resultParameter: String
+        let resultType: String
         if let returnType = function.returnType
         {
             setResult = "\(returnType) result = "
             makeResponse = "\(responseCaseName) response = \(responseCaseName)(result);"
             resultParameter = "(void *)&response"
+            resultType = returnType
         }
         else
         {
             setResult = ""
             makeResponse = ""
             resultParameter = "NULL"
+            resultType = "void"
         }
 
         let parameters: String = self.generateModuleArguments(function.parameters)
@@ -176,6 +179,7 @@ extension CppGenerator
                         \(parametersCast)
                         \(setResult)this->logic->\(methodName)(\(parameters));
                         \(makeResponse)
+                        Serial.println("\(className).\(function.name) -> \(resultType)");
                         return new \(responseName)(\(caseName), \(resultParameter));
                     }
         """

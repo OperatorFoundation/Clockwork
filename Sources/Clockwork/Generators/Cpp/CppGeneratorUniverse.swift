@@ -161,11 +161,18 @@ extension CppGenerator
     {
         let signature = self.generateFunctionSignature(className, function)
         let body = self.generateFunctionBody(className, function)
+        let lines: [String] = body.split(separator: "\n").map { String($0) }.filter
+        {
+            line in
+
+            return !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        let trimmedBody = lines.joined(separator: "\n")
 
         return """
         \(signature)
         {
-        \(body)
+        \(trimmedBody)
         }
         """
     }
@@ -210,6 +217,7 @@ extension CppGenerator
         let requestCaseName = self.makeRequestCaseName(className, function)
         let responseName = self.makeResponseName(className)
         let responseCaseName = self.makeResponseCaseName(className, function)
+        let errorName = self.makeErrorName(className)
 
         let requestBodyInit: String
         let requestBodyParameter: String
@@ -258,6 +266,16 @@ extension CppGenerator
             \(requestBodyInit)
             \(requestName) *request = new \(requestName)(\(requestEnumCaseName), \(requestBodyParameter));
             \(responseName) *response = this->module->handle(request);
+
+            if (response->type == \(errorName))
+            {
+                Serial.println("ERROR in \(className).\(function.name)(). Program halted.");
+                while(1)
+                {
+                    // We can't return because we don't have a valid return value, so we enter an infinite loop instead.
+                }
+            }
+
             \(responseCast)
             \(returnValue)
             delete request;

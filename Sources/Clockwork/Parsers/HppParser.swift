@@ -117,7 +117,9 @@ public class HppParser: Parser
             return []
         }
 
-        return mtext.split(", ").compactMap
+        return mtext.split(",")
+        .map { $0.trim() }
+        .compactMap
         {
             part in
 
