@@ -233,20 +233,20 @@ public class SwiftGenerator
         if authenticateClient
         {
             return """
-            public init(connection: TransmissionTypes.Connection, keychain: KeychainProtocol, logger: Logger) throws
-            {
-                let _ = try NametagClientConnection(connection, keychain, logger)
-                self.connection = connection
-            }
+                public init(connection: TransmissionTypes.Connection, keychain: KeychainProtocol, logger: Logger) throws
+                {
+                    let _ = try NametagClientConnection(connection, keychain, logger)
+                    self.connection = connection
+                }
             """
         }
         else
         {
             return """
-            public init(connection: TransmissionTypes.Connection)
-            {
-                self.connection = connection
-            }
+                public init(connection: TransmissionTypes.Connection)
+                {
+                    self.connection = connection
+                }
             """
         }
     }
