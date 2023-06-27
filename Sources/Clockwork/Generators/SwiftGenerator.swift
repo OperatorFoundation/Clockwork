@@ -63,7 +63,7 @@ public class SwiftGenerator
         }
     }
 
-    public func generateServer(_ input: URL, _ output: URL)
+    public func generateServer(_ input: URL, _ output: URL, authenticateClient: Bool = false)
     {
         do
         {
@@ -77,7 +77,7 @@ public class SwiftGenerator
                 return
             }
 
-            try self.generateServer(output, imports, className, functions)
+            try self.generateServer(output, imports, className, functions, authenticateClient: authenticateClient)
         }
         catch
         {
@@ -103,12 +103,12 @@ public class SwiftGenerator
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateServer(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function]) throws
+    func generateServer(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool) throws
     {
         print("Generating \(className)Server.swift...")
 
         let outputFile = outputURL.appending(component: "\(className)Server.swift")
-        let result = try self.generateServerText(imports, className, functions)
+        let result = try self.generateServerText(imports, className, functions, authenticateClient: authenticateClient)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
@@ -216,7 +216,7 @@ public class SwiftGenerator
         """
     }
 
-    func generateServerText(_ imports: [String], _ className: String, _ functions: [Function]) throws -> String
+    func generateServerText(_ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool) throws -> String
     {
         let date = Date() // now
         let formatter = DateFormatter()
@@ -228,117 +228,236 @@ public class SwiftGenerator
         let cases = self.generateServerCases(className, functions)
         let importLines = self.generateImports(imports)
 
-        return """
-        //
-        //  \(className)Server.swift
-        //
-        //
-        //  Created by Clockwork on \(dateString).
-        //
-
-        import Foundation
-
-        import TransmissionTypes
-
-        import \(className)
-        \(importLines)
-
-        public class \(className)Server
+        if authenticateClient
         {
-            let listener: TransmissionTypes.Listener
-            let handler: \(className)
+            return """
+            //
+            //  \(className)Server.swift
+            //
+            //
+            //  Created by Clockwork on \(dateString).
+            //
 
-            var running: Bool = true
+            import Foundation
 
-            public init(listener: TransmissionTypes.Listener, handler: \(className))
+            import Nametag
+            import TransmissionTypes
+
+            import \(className)
+            \(importLines)
+
+            public class \(className)Server
             {
-                self.listener = listener
-                self.handler = handler
+                let listener: TransmissionTypes.Listener
+                let handler: \(className)
 
-                Task
+                var running: Bool = true
+
+                public init(listener: TransmissionTypes.Listener, handler: \(className), logger: Logger)
                 {
-                    self.acceptLoop()
-                }
-            }
+                    self.listener = listener
+                    self.handler = handler
 
-            public func shutdown()
-            {
-                self.running = false
-            }
-
-            func acceptLoop()
-            {
-                while self.running
-                {
-                    do
+                    Task
                     {
-                        let connection = try self.listener.accept()
-
-                        Task
-                        {
-                            self.handleConnection(connection)
-                        }
-                    }
-                    catch
-                    {
-                        print(error)
-                        self.running = false
-                        return
+                        self.acceptLoop()
                     }
                 }
-            }
 
-            func handleConnection(_ connection: TransmissionTypes.Connection)
-            {
-                while self.running
+                public func shutdown()
                 {
-                    do
-                    {
-                        guard let requestData = connection.readWithLengthPrefix(prefixSizeInBits: 64) else
-                        {
-                            throw \(className)ServerError.readFailed
-                        }
-        
-                        print("Received a request:\\n\\(requestData.string)")
+                    self.running = false
+                }
 
-                        let decoder = JSONDecoder()
-                        let request = try decoder.decode(\(className)Request.self, from: requestData)
-                        switch request
-                        {
-        \(cases)
-                        }
-                    }
-                    catch
+                func acceptLoop()
+                {
+                    while self.running
                     {
-                        print(error)
-
                         do
                         {
-                            let response = \(className)Error(error.localizedDescription)
-                            let encoder = JSONEncoder()
-                            let responseData = try encoder.encode(response)
-                            print("Sending a response:\\n\\(responseData.string)")
-                            let _ = connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
+                            let connection = try self.listener.accept()
+
+
+                            Task
+                            {
+                                self.handleConnection(connection)
+                            }
                         }
                         catch
                         {
                             print(error)
+                            self.running = false
+                            return
                         }
+                    }
+                }
 
-                        return
+                func handleConnection(_ connection: TransmissionTypes.Connection)
+                {
+                    while self.running
+                    {
+                        do
+                        {
+                            guard let requestData = connection.readWithLengthPrefix(prefixSizeInBits: 64) else
+                            {
+                                throw \(className)ServerError.readFailed
+                            }
+
+                            print("Received a request:\\n\\(requestData.string)")
+
+                            let decoder = JSONDecoder()
+                            let request = try decoder.decode(\(className)Request.self, from: requestData)
+                            switch request
+                            {
+            \(cases)
+                            }
+                        }
+                        catch
+                        {
+                            print(error)
+
+                            do
+                            {
+                                let response = \(className)Error(error.localizedDescription)
+                                let encoder = JSONEncoder()
+                                let responseData = try encoder.encode(response)
+                                print("Sending a response:\\n\\(responseData.string)")
+                                let _ = connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
+                            }
+                            catch
+                            {
+                                print(error)
+                            }
+
+                            return
+                        }
                     }
                 }
             }
-        }
 
-        public enum \(className)ServerError: Error
-        {
-            case connectionRefused(String, Int)
-            case writeFailed
-            case readFailed
-            case badReturnType
+            public enum \(className)ServerError: Error
+            {
+                case connectionRefused(String, Int)
+                case writeFailed
+                case readFailed
+                case badReturnType
+            }
+            """
         }
-        """
+        else
+        {
+            return """
+            //
+            //  \(className)Server.swift
+            //
+            //
+            //  Created by Clockwork on \(dateString).
+            //
+
+            import Foundation
+
+            import TransmissionTypes
+
+            import \(className)
+            \(importLines)
+
+            public class \(className)Server
+            {
+                let listener: TransmissionTypes.Listener
+                let handler: \(className)
+
+                var running: Bool = true
+
+                public init(listener: TransmissionTypes.Listener, handler: \(className))
+                {
+                    self.listener = listener
+                    self.handler = handler
+
+                    Task
+                    {
+                        self.acceptLoop()
+                    }
+                }
+
+                public func shutdown()
+                {
+                    self.running = false
+                }
+
+                func acceptLoop()
+                {
+                    while self.running
+                    {
+                        do
+                        {
+                            let connection = try self.listener.accept()
+
+                            Task
+                            {
+                                self.handleConnection(connection)
+                            }
+                        }
+                        catch
+                        {
+                            print(error)
+                            self.running = false
+                            return
+                        }
+                    }
+                }
+
+                func handleConnection(_ connection: TransmissionTypes.Connection)
+                {
+                    while self.running
+                    {
+                        do
+                        {
+                            guard let requestData = connection.readWithLengthPrefix(prefixSizeInBits: 64) else
+                            {
+                                throw \(className)ServerError.readFailed
+                            }
+
+                            print("Received a request:\\n\\(requestData.string)")
+
+                            let decoder = JSONDecoder()
+                            let request = try decoder.decode(\(className)Request.self, from: requestData)
+                            switch request
+                            {
+            \(cases)
+                            }
+                        }
+                        catch
+                        {
+                            print(error)
+
+                            do
+                            {
+                                let response = \(className)Error(error.localizedDescription)
+                                let encoder = JSONEncoder()
+                                let responseData = try encoder.encode(response)
+                                print("Sending a response:\\n\\(responseData.string)")
+                                let _ = connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
+                            }
+                            catch
+                            {
+                                print(error)
+                            }
+
+                            return
+                        }
+                    }
+                }
+            }
+
+            public enum \(className)ServerError: Error
+            {
+                case connectionRefused(String, Int)
+                case writeFailed
+                case readFailed
+                case badReturnType
+            }
+            """
+        }
     }
 
     func generateImports(_ imports: [String]) -> String

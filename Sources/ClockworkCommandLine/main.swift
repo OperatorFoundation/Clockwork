@@ -78,6 +78,9 @@ extension CommandLine
         @Option(help: "directory to output generated Server.hpp/.cpp files")
         var cppServer: String?
 
+        @Option(help: "whether to authenticate the client or not")
+        var authenticateClient: Bool = false
+
         mutating public func run() throws
         {
             let configURL = URL(fileURLWithPath: config)
@@ -90,7 +93,7 @@ extension CommandLine
                 }
             }
 
-            let clockworkConfig = ClockworkConfig(batch: batch, source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage, cMessages: cMessages, cServer: cServer, cppMessages: cppMessages, cppServer: cppServer, cppModule: cppModule, cppUniverse: cppUniverse)
+            let clockworkConfig = ClockworkConfig(batch: batch, source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage, cMessages: cMessages, cServer: cServer, cppMessages: cppMessages, cppServer: cppServer, cppModule: cppModule, cppUniverse: cppUniverse, authenticateClient: authenticateClient)
             try clockworkConfig.save(url: configURL)
             print("Wrote \(configURL.path)")
         }
@@ -107,8 +110,11 @@ extension CommandLine
         mutating public func run() throws
         {
             let url = URL(fileURLWithPath: configPath)
+            print(url.description)
             let config = try ClockworkConfig.load(url: url)
             let sourceURL = URL(fileURLWithPath: config.source)
+
+            let authenticateClient = config.authenticateClient ?? false
 
             if config.batch
             {
@@ -237,7 +243,7 @@ extension CommandLine
                 if let swiftServer = config.swiftServer
                 {
                     let outputURL = URL(fileURLWithPath: swiftServer)
-                    clockworkSwift.generateServer(sourceURL, outputURL)
+                    clockworkSwift.generateServer(sourceURL, outputURL, authenticateClient: authenticateClient)
                 }
 
                 let clockworkC = CGenerator(parser: parser)

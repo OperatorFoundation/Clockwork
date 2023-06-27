@@ -26,8 +26,9 @@ public class ClockworkConfig: Codable
     public let cppServer: String?
     public let cppModule: String?
     public let cppUniverse: String?
+    public let authenticateClient: Bool?
 
-    public init(batch: Bool, source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil, kotlinPackage: String? = nil, cMessages: String? = nil, cServer: String? = nil, cppMessages: String? = nil, cppServer: String? = nil, cppModule: String? = nil, cppUniverse: String? = nil)
+    public init(batch: Bool, source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil, kotlinPackage: String? = nil, cMessages: String? = nil, cServer: String? = nil, cppMessages: String? = nil, cppServer: String? = nil, cppModule: String? = nil, cppUniverse: String? = nil, authenticateClient: Bool? = nil)
     {
         self.batch = batch
         self.source = source
@@ -46,6 +47,7 @@ public class ClockworkConfig: Codable
         self.cppServer = cppServer
         self.cppModule = cppModule
         self.cppUniverse = cppUniverse
+        self.authenticateClient = authenticateClient
     }
 }
 
