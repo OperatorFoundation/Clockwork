@@ -237,7 +237,7 @@ extension CommandLine
                 if let swiftClient = config.swiftClient
                 {
                     let outputURL = URL(fileURLWithPath: swiftClient)
-                    clockworkSwift.generateClient(sourceURL, outputURL)
+                    clockworkSwift.generateClient(sourceURL, outputURL, authenticateClient: authenticateClient)
                 }
 
                 if let swiftServer = config.swiftServer

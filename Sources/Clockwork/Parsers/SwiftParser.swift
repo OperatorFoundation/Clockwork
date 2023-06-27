@@ -110,7 +110,7 @@ public class SwiftParser: Parser
         let suffix = String(function.split(separator: "(")[1])
         let prefix = String(suffix.split(separator: ")")[0])
         let parts = prefix.split(separator: ", ").map { String($0) }
-        return try parts.map
+        let parameters = try parts.map
         {
             part in
 
@@ -123,6 +123,13 @@ public class SwiftParser: Parser
             let name = String(subparts[0])
             let type = String(subparts[1])
             return FunctionParameter(name: name, type: type)
+        }
+        
+        return parameters.filter
+        {
+            parameter in
+            
+            return parameter.name != "authenticatedConnectionPublicKey"
         }
     }
 
