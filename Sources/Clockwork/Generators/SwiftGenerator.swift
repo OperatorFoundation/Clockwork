@@ -213,7 +213,7 @@ public class SwiftGenerator
             let connection: TransmissionTypes.Connection
             let lock = DispatchSemaphore(value: 1)
 
-            \(generateClientInit(authenticateClient: authenticateClient))
+        \(generateClientInit(authenticateClient: authenticateClient))
 
         \(functions)
         }
