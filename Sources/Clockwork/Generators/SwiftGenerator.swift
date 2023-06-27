@@ -41,7 +41,7 @@ public class SwiftGenerator
         }
     }
 
-    public func generateClient(_ input: URL, _ output: URL)
+    public func generateClient(_ input: URL, _ output: URL, authenticateClient: Bool)
     {
         do
         {
@@ -55,7 +55,7 @@ public class SwiftGenerator
                 return
             }
 
-            try self.generateClient(output, imports, className, functions)
+            try self.generateClient(output, imports, className, functions, authenticateClient: authenticateClient)
         }
         catch
         {
@@ -94,7 +94,7 @@ public class SwiftGenerator
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateClient(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function]) throws
+    func generateClient(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool) throws
     {
         print("Generating \(className)Client.swift...")
 
