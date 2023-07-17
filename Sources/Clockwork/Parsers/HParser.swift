@@ -30,6 +30,12 @@ public class HParser: Parser
         return sourceURL.deletingPathExtension().lastPathComponent
     }
 
+    public func findSuperclassNames(_ source: String, _ className: String) throws -> [String]?
+    {
+        // FIXME
+        return nil
+    }
+
     public func findFunctions(_ source: String) throws -> [Function]
     {
         let regex = try Regex("^[ \\t]*[A-Za-z0-9_]+ [A-Za-z0-9_]+(.+);$")

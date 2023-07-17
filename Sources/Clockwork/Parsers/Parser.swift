@@ -13,6 +13,7 @@ public protocol Parser
 
     func findImports(_ source: String) throws -> [String]
     func findClassName(_ sourceURL: URL, _ source: String) throws -> String
+    func findSuperclassNames(_ source: String, _ className: String) throws -> [String]?
     func findFunctions(_ source: String) throws -> [Function]
 }
 

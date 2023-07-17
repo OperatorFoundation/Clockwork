@@ -17,6 +17,10 @@ extension CppGenerator
             let className = try self.parser.findClassName(input, source)
 
             let functions = try self.parser.findFunctions(source)
+//            if let superclasses = try self.parser.findSuperclassNames(source, className), superclasses.count > 0
+//            {
+//                try self.parser.findImports(source)
+//            }
 
             guard functions.count > 0 else
             {

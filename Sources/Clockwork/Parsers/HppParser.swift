@@ -36,6 +36,57 @@ public class HppParser: Parser
         return className.toUTF8String()
     }
 
+    public func findSuperclassNames(_ source: String, _ className: String) throws -> [String]?
+    {
+        let text = Text(fromUTF8String: source)
+
+        let classLine = try text.substringRegex(try Regex("class \(className)"))
+        let parts = classLine.split(" ")
+        guard parts.count >= 3 else
+        {
+            return nil
+        }
+
+        guard parts[0].toUTF8String() == "class" else
+        {
+            return nil
+        }
+
+        guard parts[1].toUTF8String() == className else
+        {
+            return nil
+        }
+
+        let superclasses = parts.dropFirst(2).filter
+        {
+            text in
+
+            if text.toUTF8String() == "public"
+            {
+                return false
+            }
+
+            if text.toUTF8String() == ":"
+            {
+                return false
+            }
+
+            if text.toUTF8String() == "{"
+            {
+                return false
+            }
+
+            return true
+        }
+
+        guard superclasses.count > 0 else
+        {
+            return nil
+        }
+
+        return superclasses.map { $0.toUTF8String() }
+    }
+
     public func findFunctions(_ source: String) throws -> [Function]
     {
         let mtext = MutableText(fromUTF8String: source)

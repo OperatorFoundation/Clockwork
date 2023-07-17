@@ -44,6 +44,12 @@ public class SwiftParser: Parser
         return String(source[ranges[0]].split(separator: " ")[1])
     }
 
+    public func findSuperclassNames(_ source: String, _ className: String) throws -> [String]?
+    {
+        // FIXME
+        return nil
+    }
+
     public func findFunctions(_ source: String) throws -> [Function]
     {
         let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9\\[\\]<>]+[?]?)?")
