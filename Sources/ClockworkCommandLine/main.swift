@@ -26,6 +26,9 @@ extension CommandLine
     {
         @Flag(help: "automatically make a list of source files based on the contents of the directory and process them all")
         var batch: Bool = false
+        
+        @Flag(help: "use CBOR serialization")
+        var cbor: Bool = false
 
         @Argument(help: "path to .json config file")
         var config: String
@@ -93,7 +96,7 @@ extension CommandLine
                 }
             }
 
-            let clockworkConfig = ClockworkConfig(batch: batch, source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage, cMessages: cMessages, cServer: cServer, cppMessages: cppMessages, cppServer: cppServer, cppModule: cppModule, cppUniverse: cppUniverse, authenticateClient: authenticateClient)
+            let clockworkConfig = ClockworkConfig(batch: batch, cbor: cbor, source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage, cMessages: cMessages, cServer: cServer, cppMessages: cppMessages, cppServer: cppServer, cppModule: cppModule, cppUniverse: cppUniverse, authenticateClient: authenticateClient)
             try clockworkConfig.save(url: configURL)
             print("Wrote \(configURL.path)")
         }
