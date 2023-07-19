@@ -118,6 +118,8 @@ extension CommandLine
             let sourceURL = URL(fileURLWithPath: config.source)
 
             let authenticateClient = config.authenticateClient ?? false
+            
+            let format: SerializationFormat = config.cbor ? .cbor : .json
 
             if config.batch
             {
@@ -240,7 +242,7 @@ extension CommandLine
                 if let swiftClient = config.swiftClient
                 {
                     let outputURL = URL(fileURLWithPath: swiftClient)
-                    clockworkSwift.generateClient(sourceURL, outputURL, authenticateClient: authenticateClient)
+                    clockworkSwift.generateClient(sourceURL, outputURL, authenticateClient: authenticateClient, format: format)
                 }
 
                 if let swiftServer = config.swiftServer

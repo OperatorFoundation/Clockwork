@@ -9,7 +9,7 @@ import Foundation
 
 extension SwiftGenerator
 {
-    public func generateClient(_ input: URL, _ output: URL, authenticateClient: Bool)
+    public func generateClient(_ input: URL, _ output: URL, authenticateClient: Bool, format: SerializationFormat = .json)
     {
         do
         {
@@ -23,7 +23,7 @@ extension SwiftGenerator
                 return
             }
 
-            try self.generateClient(output, imports, className, functions, authenticateClient: authenticateClient)
+            try self.generateClient(output, imports, className, functions, authenticateClient: authenticateClient, format: format)
         }
         catch
         {
@@ -31,12 +31,12 @@ extension SwiftGenerator
         }
     }
 
-    func generateClient(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool) throws
+    func generateClient(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) throws
     {
         print("Generating \(className)Client.swift...")
 
         let outputFile = outputURL.appending(component: "\(className)Client.swift")
-        let result = try self.generateClientText(imports, className, functions, authenticateClient: authenticateClient)
+        let result = try self.generateClientText(imports, className, functions, authenticateClient: authenticateClient, format: format)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
