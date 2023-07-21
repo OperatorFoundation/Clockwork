@@ -248,7 +248,7 @@ extension CommandLine
                 if let swiftServer = config.swiftServer
                 {
                     let outputURL = URL(fileURLWithPath: swiftServer)
-                    clockworkSwift.generateServer(sourceURL, outputURL, authenticateClient: authenticateClient)
+                    clockworkSwift.generateServer(sourceURL, outputURL, authenticateClient: authenticateClient, format: format)
                 }
 
                 let clockworkC = CGenerator(parser: parser)

@@ -23,7 +23,7 @@ extension SwiftGenerator
                 return
             }
 
-            try self.generateServer(output, imports, className, functions, authenticateClient: authenticateClient)
+            try self.generateServer(output, imports, className, functions, authenticateClient: authenticateClient, format: format)
         }
         catch
         {
@@ -36,7 +36,7 @@ extension SwiftGenerator
         print("Generating \(className)Server.swift...")
 
         let outputFile = outputURL.appending(component: "\(className)Server.swift")
-        let result = try self.generateServerText(imports, className, functions, authenticateClient: authenticateClient)
+        let result = try self.generateServerText(imports, className, functions, authenticateClient: authenticateClient, format: format)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
