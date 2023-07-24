@@ -41,7 +41,7 @@ public class KotlinGenerator
         }
     }
 
-    public func generateClient(_ input: URL, _ output: URL, _ package: String?)
+    public func generateClient(_ input: URL, _ output: URL, _ package: String?, format: SerializationFormat = .json)
     {
         do
         {
@@ -72,7 +72,7 @@ public class KotlinGenerator
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function], _ package: String?) throws
+    func generateClient(_ outputURL: URL, _ className: String, _ functions: [Function], _ package: String?, format: SerializationFormat = .json) throws
     {
         print("Generating \(className)Client.kt...")
 

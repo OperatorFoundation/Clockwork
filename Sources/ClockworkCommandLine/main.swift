@@ -216,7 +216,7 @@ extension CommandLine
                 if let kotlinClient = config.kotlinClient
                 {
                     let outputURL = URL(fileURLWithPath: kotlinClient)
-                    clockworkKotlin.generateClient(sourceURL, outputURL, config.kotlinPackage)
+                    clockworkKotlin.generateClient(sourceURL, outputURL, config.kotlinPackage, format: format)
                 }
 
                 let clockworkPython = PythonGenerator(parser: parser)
