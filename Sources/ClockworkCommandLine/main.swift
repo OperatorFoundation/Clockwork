@@ -27,7 +27,7 @@ extension CommandLine
         @Flag(help: "automatically make a list of source files based on the contents of the directory and process them all")
         var batch: Bool = false
         
-        @Flag(help: "use CBOR serialization")
+        @Flag(help: "Whether or not to use CBOR serialization. The default is false (use JSON).")
         var cbor: Bool = false
 
         @Argument(help: "path to .json config file")
@@ -81,7 +81,7 @@ extension CommandLine
         @Option(help: "directory to output generated Server.hpp/.cpp files")
         var cppServer: String?
 
-        @Option(help: "whether to authenticate the client or not")
+        @Option(help: "whether to authenticate the client or not. The default is false.")
         var authenticateClient: Bool = false
 
         mutating public func run() throws

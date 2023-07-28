@@ -91,26 +91,27 @@ extension SwiftGenerator
             import TransmissionNametag
             import TransmissionTypes
 
-            \(codableImports)
-
+            \(codableImports.sorted())
+            \(importLines.sorted())
             import \(className)
-            \(importLines)
+            
 
             public class \(className)Server
             {
                 let listener: TransmissionTypes.Listener
                 let handler: \(className)
                 let logger: Logger
+                let acceptQueue = DispatchQueue(label: "SwitchboardAcceptQueue")
 
                 var running: Bool = true
 
-                public init(listener: TransmissionTypes.Listener, handler: \(className), logger: Logger)
+                public init(listener: TransmissionTypes.Listener, handler: \(className), logger: Logger) async
                 {
                     self.listener = listener
                     self.handler = handler
                     self.logger = logger
 
-                    Task
+                    await AsyncAwaitAsynchronizer.async
                     {
                         self.acceptLoop()
                     }
@@ -135,7 +136,7 @@ extension SwiftGenerator
                                 continue
                             }
 
-                            Task
+                            acceptQueue.async
                             {
                                 self.handleConnection(authenticatedConnection)
                             }
@@ -224,15 +225,16 @@ extension SwiftGenerator
             {
                 let listener: TransmissionTypes.Listener
                 let handler: \(className)
-
+                let acceptQueue = DispatchQueue(label: "SwitchboardAcceptQueue")
+            
                 var running: Bool = true
 
-                public init(listener: TransmissionTypes.Listener, handler: \(className))
+                public init(listener: TransmissionTypes.Listener, handler: \(className)) async
                 {
                     self.listener = listener
                     self.handler = handler
 
-                    Task
+                    await AsyncAwaitAsynchronizer.async
                     {
                         self.acceptLoop()
                     }
@@ -251,7 +253,7 @@ extension SwiftGenerator
                         {
                             let connection = try self.listener.accept()
 
-                            Task
+                            acceptQueue.async
                             {
                                 self.handleConnection(connection)
                             }
@@ -472,7 +474,7 @@ extension SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request(let value):
                                         let result = try self.handler.\(function.name)(\(publicKey)\(argumentList))
-                                        let response = try \(className)Response.\(function.name.capitalized)Response(value: result)
+                                        let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")

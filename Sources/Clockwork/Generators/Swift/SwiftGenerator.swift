@@ -21,7 +21,10 @@ public class SwiftGenerator
 
     func generateImports(_ imports: [String]) -> String
     {
-        let importLines = imports.map { return "import \($0)" }
+        var allImports = imports
+        allImports.append("Chord")
+        
+        let importLines = allImports.map { return "import \($0)" }
         return importLines.sorted().joined(separator: "\n")
     }
 
