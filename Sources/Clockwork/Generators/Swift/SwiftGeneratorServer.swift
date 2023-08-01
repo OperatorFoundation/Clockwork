@@ -65,9 +65,7 @@ extension SwiftGenerator
             case .cbor:
                 encoder = "CBOREncoder"
                 decoder = "CBORDecoder"
-                codableImports = """
-                import PotentCodables
-                """
+                codableImports = "import PotentCodables"
         }
 
         if authenticateClient
@@ -90,9 +88,8 @@ extension SwiftGenerator
 
             import TransmissionNametag
             import TransmissionTypes
-
-            \(codableImports.sorted())
-            \(importLines.sorted())
+            \(codableImports)
+            \(importLines)
             import \(className)
             
 
