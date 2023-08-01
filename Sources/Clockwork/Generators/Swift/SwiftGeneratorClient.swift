@@ -51,6 +51,10 @@ extension SwiftGenerator
 
         let functions = try self.generateFunctions(className, functions)
         var firstImportLines = "import TransmissionTypes"
+        var classPropertyLines = """
+                let connection: TransmissionTypes.Connection
+                let lock = DispatchSemaphore(value: 1)
+            """
 
         if authenticateClient
         {
@@ -63,6 +67,12 @@ extension SwiftGenerator
 
             import TransmissionNametag
             import TransmissionTypes
+            """
+            
+            classPropertyLines = """
+                public let publicKey: PublicKey
+                let connection: TransmissionTypes.Connection
+                let lock = DispatchSemaphore(value: 1)
             """
         }
         let importLines = self.generateImports(imports)
@@ -90,16 +100,13 @@ extension SwiftGenerator
         import Foundation
 
         \(firstImportLines)
-
         \(codableImports)
-
         import \(className)
         \(importLines)
 
         public class \(className)Client
         {
-            let connection: TransmissionTypes.Connection
-            let lock = DispatchSemaphore(value: 1)
+        \(classPropertyLines)
 
         \(generateClientInit(authenticateClient: authenticateClient))
 
@@ -121,10 +128,10 @@ extension SwiftGenerator
         if authenticateClient
         {
             return """
-                public init(connection: TransmissionTypes.Connection, keychain: KeychainProtocol, logger: Logger) throws
+                public init(connection: AuthenticatingConnection, keychain: KeychainProtocol, logger: Logger) throws
                 {
-                    let _ = try NametagClientConnection(connection, keychain, logger)
-                    self.connection = connection
+                    self.connection = connection.network
+                    self.publicKey = connection.publicKey
                 }
             """
         }
