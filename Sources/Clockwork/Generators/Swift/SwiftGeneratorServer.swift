@@ -90,8 +90,6 @@ extension SwiftGenerator
             import TransmissionTypes
             \(codableImports)
             \(importLines)
-            import \(className)
-            
 
             public class \(className)Server
             {
@@ -212,10 +210,7 @@ extension SwiftGenerator
             import Foundation
 
             import TransmissionTypes
-
             \(codableImports)
-
-            import \(className)
             \(importLines)
 
             public class \(className)Server
