@@ -244,6 +244,7 @@ extension SwiftGenerator
 
                 let message = \(className)Request.\(function.name.capitalized)Request\(structHandler)
                 let encoder = \(encoder)()
+                encoder.outputFormatting = .withoutEscapingSlashes
                 let data = try encoder.encode(message)
                 guard self.connection.writeWithLengthPrefix(data: data, prefixSizeInBits: 64) else
                 {

@@ -173,6 +173,7 @@ extension SwiftGenerator
                             {
                                 let response = \(className)Error(error.localizedDescription)
                                 let encoder = \(encoder)()
+                                encoder.outputFormatting = .withoutEscapingSlashes
                                 let responseData = try encoder.encode(response)
                                 print("Sending a response:\\n\\(responseData.string)")
                                 let _ = connection.network.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
@@ -287,6 +288,7 @@ extension SwiftGenerator
                             {
                                 let response = \(className)Error(error.localizedDescription)
                                 let encoder = \(encoder)()
+                                encoder.outputFormatting = .withoutEscapingSlashes
                                 let responseData = try encoder.encode(response)
                                 print("Sending a response:\\n\\(responseData.string)")
                                 let _ = connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
@@ -351,6 +353,7 @@ extension SwiftGenerator
                                         try self.handler.\(function.name)(\(publicKey))
                                         let response = try \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -367,6 +370,7 @@ extension SwiftGenerator
                                         self.handler.\(function.name)(\(publicKey))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -386,6 +390,7 @@ extension SwiftGenerator
                                         let result = try self.handler.\(function.name)(\(publicKey))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -402,6 +407,7 @@ extension SwiftGenerator
                                         let result = self.handler.\(function.name)(\(publicKey)
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -433,6 +439,7 @@ extension SwiftGenerator
                                         try self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -449,6 +456,7 @@ extension SwiftGenerator
                                         self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -468,6 +476,7 @@ extension SwiftGenerator
                                         let result = try self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -484,6 +493,7 @@ extension SwiftGenerator
                                         let result = self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
