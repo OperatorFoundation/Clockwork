@@ -17,7 +17,7 @@ public protocol Parser
     func findFunctions(_ source: String) throws -> [Function]
 }
 
-public struct Function
+public struct Function: Codable
 {
     let name: String
     let parameters: [FunctionParameter]
@@ -25,7 +25,7 @@ public struct Function
     let throwing: Bool
 }
 
-public struct FunctionParameter
+public struct FunctionParameter: Codable
 {
     let name: String
     let type: String

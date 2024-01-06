@@ -81,6 +81,12 @@ extension CommandLine
         @Option(help: "whether to authenticate the client or not")
         var authenticateClient: Bool = false
 
+        @Option(help: "directory to output .json file containing extracted interface")
+        var json: String?
+
+        @Option(help: "directory to output .daydream file containing extracted interface")
+        var daydream: String?
+
         mutating public func run() throws
         {
             let configURL = URL(fileURLWithPath: config)
@@ -93,7 +99,28 @@ extension CommandLine
                 }
             }
 
-            let clockworkConfig = ClockworkConfig(batch: batch, source: source, swiftMessages: swiftMessages, kotlinMessages: kotlinMessages, pythonMessages: pythonMessages, swiftClient: swiftClient, pythonClient: pythonClient, kotlinClient: kotlinClient, swiftServer: swiftServer, pythonServer: pythonServer, kotlinPackage: kotlinPackage, cMessages: cMessages, cServer: cServer, cppMessages: cppMessages, cppServer: cppServer, cppModule: cppModule, cppUniverse: cppUniverse, authenticateClient: authenticateClient)
+            let clockworkConfig = ClockworkConfig(
+                batch: batch,
+                source: source,
+                swiftMessages: swiftMessages,
+                kotlinMessages: kotlinMessages,
+                pythonMessages: pythonMessages,
+                swiftClient: swiftClient,
+                pythonClient: pythonClient,
+                kotlinClient: kotlinClient,
+                swiftServer: swiftServer,
+                pythonServer: pythonServer,
+                kotlinPackage: kotlinPackage,
+                cMessages: cMessages,
+                cServer: cServer,
+                cppMessages: cppMessages,
+                cppServer: cppServer,
+                cppModule: cppModule,
+                cppUniverse: cppUniverse,
+                authenticateClient: authenticateClient,
+                json: json,
+                daydream: daydream
+            )
             try clockworkConfig.save(url: configURL)
             print("Wrote \(configURL.path)")
         }
@@ -300,6 +327,22 @@ extension CommandLine
                 {
                     let outputURL = URL(fileURLWithPath: cppUniverse)
                     clockworkCpp.generateUniverse(sourceURL, outputURL)
+                }
+
+                let clockworkJson = JsonGenerator(parser: parser)
+
+                if let json = config.json
+                {
+                    let outputURL = URL(fileURLWithPath: json)
+                    clockworkJson.generate(sourceURL, outputURL)
+                }
+
+                let clockworkDaydream = DaydreamGenerator(parser: parser)
+
+                if let daydreamDirectory = config.daydream
+                {
+                    let outputURL = URL(fileURLWithPath: daydreamDirectory)
+                    clockworkDaydream.generate(sourceURL, outputURL)
                 }
             }
         }

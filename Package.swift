@@ -1,11 +1,11 @@
-// swift-tools-version: 5.7
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "Clockwork",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     products: [
         .library(name: "ClockworkTypes", targets: ["ClockworkTypes"]),
         .plugin(name: "Clockwork", targets: ["ClockworkBuildTool"]),
@@ -15,6 +15,7 @@ let package = Package(
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.1.4"),
 
+        .package(url: "https://github.com/blanu/Daydream", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Gardener", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Spacetime", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Text", branch: "main"),
@@ -32,8 +33,8 @@ let package = Package(
         .target(
             name: "Clockwork",
             dependencies: [
+                "Daydream",
                 "Gardener",
-
                 "Text",
             ]
         ),
