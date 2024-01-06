@@ -9,7 +9,7 @@ import Foundation
 
 extension SwiftGenerator
 {
-    public func generateClient(_ input: URL, _ output: URL, authenticateClient: Bool)
+    public func generateClient(_ input: URL, _ output: URL, authenticateClient: Bool, format: SerializationFormat = .json)
     {
         do
         {
@@ -23,7 +23,7 @@ extension SwiftGenerator
                 return
             }
 
-            try self.generateClient(output, imports, className, functions, authenticateClient: authenticateClient)
+            try self.generateClient(output, imports, className, functions, authenticateClient: authenticateClient, format: format)
         }
         catch
         {
@@ -31,12 +31,12 @@ extension SwiftGenerator
         }
     }
 
-    func generateClient(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool) throws
+    func generateClient(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) throws
     {
         print("Generating \(className)Client.swift...")
 
         let outputFile = outputURL.appending(component: "\(className)Client.swift")
-        let result = try self.generateClientText(imports, className, functions, authenticateClient: authenticateClient)
+        let result = try self.generateClientText(imports, className, functions, authenticateClient: authenticateClient, format: format)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
@@ -51,6 +51,10 @@ extension SwiftGenerator
 
         let functions = try self.generateFunctions(className, functions)
         var firstImportLines = "import TransmissionTypes"
+        var classPropertyLines = """
+                let connection: TransmissionTypes.Connection
+                let lock = DispatchSemaphore(value: 1)
+            """
 
         if authenticateClient
         {
@@ -63,6 +67,12 @@ extension SwiftGenerator
 
             import TransmissionNametag
             import TransmissionTypes
+            """
+            
+            classPropertyLines = """
+                public let publicKey: PublicKey
+                let connection: TransmissionTypes.Connection
+                let lock = DispatchSemaphore(value: 1)
             """
         }
         let importLines = self.generateImports(imports)
@@ -90,16 +100,13 @@ extension SwiftGenerator
         import Foundation
 
         \(firstImportLines)
-
         \(codableImports)
-
         import \(className)
         \(importLines)
 
         public class \(className)Client
         {
-            let connection: TransmissionTypes.Connection
-            let lock = DispatchSemaphore(value: 1)
+        \(classPropertyLines)
 
         \(generateClientInit(authenticateClient: authenticateClient))
 
@@ -121,10 +128,10 @@ extension SwiftGenerator
         if authenticateClient
         {
             return """
-                public init(connection: TransmissionTypes.Connection, keychain: KeychainProtocol, logger: Logger) throws
+                public init(connection: AuthenticatingConnection, keychain: KeychainProtocol, logger: Logger) throws
                 {
-                    let _ = try NametagClientConnection(connection, keychain, logger)
-                    self.connection = connection
+                    self.connection = connection.network
+                    self.publicKey = connection.publicKey
                 }
             """
         }
@@ -237,6 +244,7 @@ extension SwiftGenerator
 
                 let message = \(className)Request.\(function.name.capitalized)Request\(structHandler)
                 let encoder = \(encoder)()
+                encoder.outputFormatting = .withoutEscapingSlashes
                 let data = try encoder.encode(message)
                 guard self.connection.writeWithLengthPrefix(data: data, prefixSizeInBits: 64) else
                 {

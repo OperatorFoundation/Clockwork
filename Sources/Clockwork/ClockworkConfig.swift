@@ -10,6 +10,7 @@ import Foundation
 public class ClockworkConfig: Codable
 {
     public let batch: Bool
+    public let cbor: Bool
     public let source: String
     public let swiftMessages: String?
     public let kotlinMessages: String?
@@ -30,9 +31,10 @@ public class ClockworkConfig: Codable
     public let json: String?
     public let daydream: String?
 
-    public init(batch: Bool, source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil, kotlinPackage: String? = nil, cMessages: String? = nil, cServer: String? = nil, cppMessages: String? = nil, cppServer: String? = nil, cppModule: String? = nil, cppUniverse: String? = nil, authenticateClient: Bool? = nil, json: String? = nil, daydream: String? = nil)
+    public init(batch: Bool, source: String, swiftMessages: String?, kotlinMessages: String?, pythonMessages: String?, swiftClient: String? = nil, pythonClient: String? = nil, kotlinClient: String? = nil, swiftServer: String? = nil, pythonServer: String? = nil, kotlinPackage: String? = nil, cMessages: String? = nil, cServer: String? = nil, cppMessages: String? = nil, cppServer: String? = nil, cppModule: String? = nil, cppUniverse: String? = nil, authenticateClient: Bool? = nil, json: String? = nil, daydream: String? = nil, cbor: Bool)
     {
         self.batch = batch
+        self.cbor = cbor
         self.source = source
         self.swiftMessages = swiftMessages
         self.kotlinMessages = kotlinMessages

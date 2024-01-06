@@ -23,7 +23,7 @@ extension SwiftGenerator
                 return
             }
 
-            try self.generateServer(output, imports, className, functions, authenticateClient: authenticateClient)
+            try self.generateServer(output, imports, className, functions, authenticateClient: authenticateClient, format: format)
         }
         catch
         {
@@ -36,7 +36,7 @@ extension SwiftGenerator
         print("Generating \(className)Server.swift...")
 
         let outputFile = outputURL.appending(component: "\(className)Server.swift")
-        let result = try self.generateServerText(imports, className, functions, authenticateClient: authenticateClient)
+        let result = try self.generateServerText(imports, className, functions, authenticateClient: authenticateClient, format: format)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
@@ -65,9 +65,7 @@ extension SwiftGenerator
             case .cbor:
                 encoder = "CBOREncoder"
                 decoder = "CBORDecoder"
-                codableImports = """
-                import PotentCodables
-                """
+                codableImports = "import PotentCodables"
         }
 
         if authenticateClient
@@ -90,10 +88,7 @@ extension SwiftGenerator
 
             import TransmissionNametag
             import TransmissionTypes
-
             \(codableImports)
-
-            import \(className)
             \(importLines)
 
             public class \(className)Server
@@ -101,16 +96,17 @@ extension SwiftGenerator
                 let listener: TransmissionTypes.Listener
                 let handler: \(className)
                 let logger: Logger
+                let acceptQueue = DispatchQueue(label: "SwitchboardAcceptQueue")
 
                 var running: Bool = true
 
-                public init(listener: TransmissionTypes.Listener, handler: \(className), logger: Logger)
+                public init(listener: TransmissionTypes.Listener, handler: \(className), logger: Logger) async
                 {
                     self.listener = listener
                     self.handler = handler
                     self.logger = logger
 
-                    Task
+                    await AsyncAwaitAsynchronizer.async
                     {
                         self.acceptLoop()
                     }
@@ -135,7 +131,7 @@ extension SwiftGenerator
                                 continue
                             }
 
-                            Task
+                            acceptQueue.async
                             {
                                 self.handleConnection(authenticatedConnection)
                             }
@@ -177,6 +173,7 @@ extension SwiftGenerator
                             {
                                 let response = \(className)Error(error.localizedDescription)
                                 let encoder = \(encoder)()
+                                encoder.outputFormatting = .withoutEscapingSlashes
                                 let responseData = try encoder.encode(response)
                                 print("Sending a response:\\n\\(responseData.string)")
                                 let _ = connection.network.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
@@ -214,25 +211,23 @@ extension SwiftGenerator
             import Foundation
 
             import TransmissionTypes
-
             \(codableImports)
-
-            import \(className)
             \(importLines)
 
             public class \(className)Server
             {
                 let listener: TransmissionTypes.Listener
                 let handler: \(className)
-
+                let acceptQueue = DispatchQueue(label: "SwitchboardAcceptQueue")
+            
                 var running: Bool = true
 
-                public init(listener: TransmissionTypes.Listener, handler: \(className))
+                public init(listener: TransmissionTypes.Listener, handler: \(className)) async
                 {
                     self.listener = listener
                     self.handler = handler
 
-                    Task
+                    await AsyncAwaitAsynchronizer.async
                     {
                         self.acceptLoop()
                     }
@@ -251,7 +246,7 @@ extension SwiftGenerator
                         {
                             let connection = try self.listener.accept()
 
-                            Task
+                            acceptQueue.async
                             {
                                 self.handleConnection(connection)
                             }
@@ -293,6 +288,7 @@ extension SwiftGenerator
                             {
                                 let response = \(className)Error(error.localizedDescription)
                                 let encoder = \(encoder)()
+                                encoder.outputFormatting = .withoutEscapingSlashes
                                 let responseData = try encoder.encode(response)
                                 print("Sending a response:\\n\\(responseData.string)")
                                 let _ = connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
@@ -357,6 +353,7 @@ extension SwiftGenerator
                                         try self.handler.\(function.name)(\(publicKey))
                                         let response = try \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -373,6 +370,7 @@ extension SwiftGenerator
                                         self.handler.\(function.name)(\(publicKey))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -392,6 +390,7 @@ extension SwiftGenerator
                                         let result = try self.handler.\(function.name)(\(publicKey))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -408,6 +407,7 @@ extension SwiftGenerator
                                         let result = self.handler.\(function.name)(\(publicKey)
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -439,6 +439,7 @@ extension SwiftGenerator
                                         try self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -455,6 +456,7 @@ extension SwiftGenerator
                                         self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -472,8 +474,9 @@ extension SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request(let value):
                                         let result = try self.handler.\(function.name)(\(publicKey)\(argumentList))
-                                        let response = try \(className)Response.\(function.name.capitalized)Response(value: result)
+                                        let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
@@ -490,6 +493,7 @@ extension SwiftGenerator
                                         let result = self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
+                                        encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 

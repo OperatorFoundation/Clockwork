@@ -26,6 +26,9 @@ extension CommandLine
     {
         @Flag(help: "automatically make a list of source files based on the contents of the directory and process them all")
         var batch: Bool = false
+        
+        @Flag(help: "Whether or not to use CBOR serialization. The default is false (use JSON).")
+        var cbor: Bool = false
 
         @Argument(help: "path to .json config file")
         var config: String
@@ -78,7 +81,7 @@ extension CommandLine
         @Option(help: "directory to output generated Server.hpp/.cpp files")
         var cppServer: String?
 
-        @Option(help: "whether to authenticate the client or not")
+        @Option(help: "whether to authenticate the client or not. The default is false.")
         var authenticateClient: Bool = false
 
         @Option(help: "directory to output .json file containing extracted interface")
@@ -119,8 +122,10 @@ extension CommandLine
                 cppUniverse: cppUniverse,
                 authenticateClient: authenticateClient,
                 json: json,
-                daydream: daydream
+                daydream: daydream,
+                cbor: cbor
             )
+
             try clockworkConfig.save(url: configURL)
             print("Wrote \(configURL.path)")
         }
@@ -142,6 +147,8 @@ extension CommandLine
             let sourceURL = URL(fileURLWithPath: config.source)
 
             let authenticateClient = config.authenticateClient ?? false
+            
+            let format: SerializationFormat = config.cbor ? .cbor : .json
 
             if config.batch
             {
@@ -238,7 +245,7 @@ extension CommandLine
                 if let kotlinClient = config.kotlinClient
                 {
                     let outputURL = URL(fileURLWithPath: kotlinClient)
-                    clockworkKotlin.generateClient(sourceURL, outputURL, config.kotlinPackage)
+                    clockworkKotlin.generateClient(sourceURL, outputURL, config.kotlinPackage, format: format)
                 }
 
                 let clockworkPython = PythonGenerator(parser: parser)
@@ -264,13 +271,13 @@ extension CommandLine
                 if let swiftClient = config.swiftClient
                 {
                     let outputURL = URL(fileURLWithPath: swiftClient)
-                    clockworkSwift.generateClient(sourceURL, outputURL, authenticateClient: authenticateClient)
+                    clockworkSwift.generateClient(sourceURL, outputURL, authenticateClient: authenticateClient, format: format)
                 }
 
                 if let swiftServer = config.swiftServer
                 {
                     let outputURL = URL(fileURLWithPath: swiftServer)
-                    clockworkSwift.generateServer(sourceURL, outputURL, authenticateClient: authenticateClient)
+                    clockworkSwift.generateServer(sourceURL, outputURL, authenticateClient: authenticateClient, format: format)
                 }
 
                 let clockworkC = CGenerator(parser: parser)
