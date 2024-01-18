@@ -53,11 +53,25 @@ public class SwiftParser: Parser
     public func findFunctions(_ source: String) throws -> [Function]
     {
         let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9\\[\\]<>]+[?]?)?")
-        let results = source.ranges(of: regex).map
+        let lines = source.split(separator: "\n").map { String($0) }
+        let results: [String] = lines.compactMap
         {
-            range in
+            line in
 
-            let substrings = source[range].split(separator: " ")[2...]
+            if line.contains(" static ")
+            {
+                return nil
+            }
+
+            let ranges = line.ranges(of: regex)
+            guard ranges.count == 1 else
+            {
+                return nil
+            }
+
+            let range = ranges[0]
+
+            let substrings = line[range].split(separator: " ")[2...]
             let strings = substrings.map { String($0) }
             return strings.joined(separator: " ")
         }
@@ -93,7 +107,7 @@ public class SwiftParser: Parser
             throw ClockworkSpacetimeError.badFunctionFormat
         }
 
-        guard function.firstIndex(of: "_") == nil else
+        guard !function.contains("<") else
         {
             throw ClockworkSpacetimeError.badFunctionFormat
         }
@@ -126,9 +140,21 @@ public class SwiftParser: Parser
                 throw ClockworkError.badFunctionFormat
             }
 
-            let name = String(subparts[0])
-            let type = String(subparts[1])
-            return FunctionParameter(name: name, type: type)
+            var name = String(subparts[0])
+            var elide = false
+            if name.starts(with: "_ ")
+            {
+                name = String(name.dropFirst().dropFirst())
+                elide = true
+            }
+
+            var type = String(subparts[1])
+            if type.contains("=")
+            {
+                let subparts = type.split(separator: "=")
+                type = String(subparts[0]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            return FunctionParameter(name: name, type: type, elide: elide)
         }
         
         return parameters.filter
@@ -146,7 +172,14 @@ public class SwiftParser: Parser
             return nil
         }
 
-        return String(function.split(separator: "-> ")[1])
+        let result = String(function.split(separator: "-> ")[1])
+
+        if result.contains("(")
+        {
+            return nil
+        }
+
+        return result
     }
 
     public func findFunctionThrowing(_ function: String) throws -> Bool

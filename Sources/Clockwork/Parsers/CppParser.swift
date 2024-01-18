@@ -140,7 +140,7 @@ public class CppParser: Parser
 
             let type = String(subparts[0])
             let name = String(subparts[1])
-            return FunctionParameter(name: name, type: type)
+            return FunctionParameter(name: name, type: type, elide: true)
         }
     }
 

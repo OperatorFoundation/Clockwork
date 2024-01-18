@@ -29,4 +29,12 @@ public struct FunctionParameter: Codable
 {
     let name: String
     let type: String
+    let elide: Bool
+
+    public init(name: String, type: String, elide: Bool = false)
+    {
+        self.name = name
+        self.type = type
+        self.elide = elide
+    }
 }

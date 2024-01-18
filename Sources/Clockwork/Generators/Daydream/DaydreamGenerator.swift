@@ -53,7 +53,7 @@ public class DaydreamGenerator
         let namespace = Namespace()
 
         namespace.singletons("Nothing", "True", "False", "Varint")
-        namespace.`enum`("Boolean", ["True", "False"])
+        namespace.`enum`("Boolean", "True", "False")
         namespace.list("ListVarint", "Varint")
 
         namespace.builtin("Int", "Varint")
@@ -61,6 +61,7 @@ public class DaydreamGenerator
         namespace.builtin("Data", "ListVarint")
         namespace.builtin("Text", "ListVarint")
         namespace.builtin("String", "ListVarint")
+        namespace.record("Error", "String")
 
         var functionNames: [Text] = []
 
@@ -74,16 +75,32 @@ public class DaydreamGenerator
             }
             else if function.parameters.count == 1
             {
-                argumentsTypeName = function.parameters[0].type.text
+                let typeName = function.parameters[0].type.text
 
-                if argumentsTypeName.startsWith("inout ")
+                if typeName.startsWith("inout ")
                 {
                     continue
                 }
 
-                if argumentsTypeName.containsSubstring("?")
+                if typeName.string.hasPrefix("[")
                 {
-                    continue
+                    let coreName = String(typeName.string.dropFirst().dropLast())
+                    let listTypeName = "\(coreName)List"
+                    namespace.list(listTypeName.text, coreName.text)
+
+                    argumentsTypeName = listTypeName.text
+                }
+                else if typeName.string.hasSuffix("?")
+                {
+                    let coreName = String(typeName.string.dropLast()).text
+                    let enumTypeName = "Maybe\(coreName)".text
+                    namespace.enum(enumTypeName, coreName, "Nothing")
+
+                    argumentsTypeName = enumTypeName
+                }
+                else
+                {
+                    argumentsTypeName = typeName
                 }
             }
             else
@@ -99,6 +116,14 @@ public class DaydreamGenerator
 
                         argument = listTypeName.text
                     }
+                    else if parameter.type.hasSuffix("?")
+                    {
+                        let coreName = String(parameter.type.dropLast()).text
+                        let enumTypeName = "Maybe\(coreName)".text
+                        namespace.enum(enumTypeName, coreName, "Nothing")
+
+                        argument = enumTypeName
+                    }
                     else
                     {
                         argument = parameter.type.text
@@ -108,6 +133,7 @@ public class DaydreamGenerator
                 }
 
                 argumentsTypeName = "\(function.name)_arguments".text
+                namespace.record(argumentsTypeName, arguments)
             }
 
             let returnType: Text
@@ -120,6 +146,14 @@ public class DaydreamGenerator
                     namespace.list(listTypeName.text, coreName.text)
 
                     returnType = listTypeName.text
+                }
+                else if functionReturnType.hasSuffix("?")
+                {
+                    let coreName = String(functionReturnType.dropLast()).text
+                    let enumTypeName = "Maybe\(coreName)".text
+                    namespace.enum(enumTypeName, coreName, "Nothing")
+
+                    returnType = enumTypeName
                 }
                 else
                 {
@@ -135,52 +169,86 @@ public class DaydreamGenerator
             {
                 if returnType == "Nothing"
                 {
-                    // f()
-                    namespace.singleton(function.name.text)
+                    if function.throwing
+                    {
+                        // f() throws
+                        namespace.singleton("\(function.name)_request".text)
+                        namespace.`enum`("\(function.name)_response".text, returnType, "Error")
+                    }
+                    else
+                    {
+                        // f()
+                        namespace.singleton("\(function.name)_request".text)
+                        namespace.singleton("\(function.name)_response".text)
+                    }
                 }
                 else
                 {
-                    // f() -> T
-                    let returnTypeName = "\(function.name.text)_return".text
-                    namespace.record(returnTypeName, [returnType])
-                    namespace.record(function.name.text, [returnTypeName])
+                    if function.throwing
+                    {
+                        // f() throws -> T
+                        namespace.singleton("\(function.name)_request".text)
+                        namespace.record("\(function.name)_response_value".text, returnType)
+                        namespace.`enum`("\(function.name)_response".text, "\(function.name)_response_value".text, "Error")
+                    }
+                    else
+                    {
+                        // f() -> T
+                        namespace.singleton("\(function.name)_request".text)
+                        namespace.record("\(function.name)_response".text, returnType)
+                    }
                 }
             }
             else
             {
                 if returnType == "Nothing"
                 {
-                    // f(T)
-                    if arguments.isEmpty
+                    if function.throwing
                     {
-                        namespace.record(function.name.text, [argumentsTypeName])
+                        // f(T) throws
+                        namespace.record("\(function.name)_request".text, argumentsTypeName)
+                        namespace.`enum`("\(function.name)_response".text, returnType, "Error")
                     }
                     else
                     {
-                        namespace.record(argumentsTypeName, arguments)
-                        namespace.record(function.name.text, [argumentsTypeName])
+                        // f(T)
+                        namespace.record("\(function.name)_request".text, argumentsTypeName)
+                        namespace.singleton("\(function.name)_response".text)
                     }
                 }
                 else
                 {
-                    // f(S) -> T
-                    let returnTypeName = "\(function.name.text)_return".text
-                    namespace.record(returnTypeName, [returnType])
-
-                    if arguments.isEmpty
+                    if function.throwing
                     {
-                        namespace.record(function.name.text, [argumentsTypeName, returnTypeName])
+                        // f(S) -> T
+                        namespace.record("\(function.name)_request".text, argumentsTypeName)
+                        namespace.record("\(function.name)_response_value".text, returnType)
+                        namespace.`enum`("\(function.name)_response".text, "\(function.name)_response_value".text, "Error")
                     }
                     else
                     {
-                        namespace.record(argumentsTypeName, arguments)
-                        namespace.record(function.name.text, [argumentsTypeName, returnTypeName])
+                        // f(S) -> T
+                        namespace.record("\(function.name)_request".text, argumentsTypeName)
+                        namespace.record("\(function.name)_response".text, returnType)
                     }
                 }
             }
 
             functionNames.append(function.name.text)
         }
+
+        let _ = functionNames.map
+        {
+            functionName in
+
+            namespace.singleton(functionName)
+        }
+
+        let requestNames = functionNames.map { "\($0)_request".text }
+        namespace.`enum`("\(extracted.className)Request".text, requestNames)
+
+        let responseNames = functionNames.map { "\($0)_response".text }
+        namespace.`enum`("\(extracted.className)Response".text, responseNames)
 
         namespace.`enum`(extracted.className.text, functionNames)
 
