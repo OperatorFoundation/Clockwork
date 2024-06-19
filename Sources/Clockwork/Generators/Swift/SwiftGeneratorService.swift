@@ -1,15 +1,15 @@
 //
-//  SwiftGeneratorServer.swift
-//  
+//  SwiftGeneratorService.swift
 //
-//  Created by Dr. Brandon Wiley on 7/17/23.
+//
+//  Created by Dr. Brandon Wiley on 2/1/24.
 //
 
 import Foundation
 
 extension SwiftGenerator
 {
-    public func generateServer(_ input: URL, _ output: URL, authenticateClient: Bool = false, format: SerializationFormat = .json)
+    public func generateService(_ input: URL, _ output: URL, authenticateClient: Bool = false, format: SerializationFormat = .json)
     {
         do
         {
@@ -31,16 +31,16 @@ extension SwiftGenerator
         }
     }
 
-    func generateServer(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) throws
+    func generateService(_ outputURL: URL, _ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) throws
     {
-        print("Generating \(className)Server.swift...")
+        print("Generating \(className)Service.swift...")
 
-        let outputFile = outputURL.appending(component: "\(className)Server.swift")
+        let outputFile = outputURL.appending(component: "\(className)Service.swift")
         let result = try self.generateServerText(imports, className, functions, authenticateClient: authenticateClient, format: format)
         try result.write(to: outputFile, atomically: true, encoding: .utf8)
     }
 
-    func generateServerText(_ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) throws -> String
+    func generateServiceText(_ imports: [String], _ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) throws -> String
     {
         let date = Date() // now
         let formatter = DateFormatter()
@@ -72,77 +72,53 @@ extension SwiftGenerator
         {
             return """
             //
-            //  \(className)Server.swift
+            //  \(className)Service.swift
             //
             //
             //  Created by Clockwork on \(dateString).
             //
 
+            import ArgumentParser
             import Foundation
             import Logging
 
-            import TransmissionAsync
-            import TransmissionAsyncNametag
+            import Transmission
             \(codableImports)
             \(importLines)
 
-            public class \(className)Server
+            public class \(className)Service
             {
-                let listener: AsyncListener
-                let handler: \(className)
+                let connection: AuthenticatedConnection
                 let logger: Logger
+                let logic: \(className)
 
-                var running: Bool = true
-
-                public init(listener: AsyncListener, handler: \(className), logger: Logger) async
+                public init(logger: Logger) throws async
                 {
-                    self.listener = listener
-                    self.handler = handler
                     self.logger = logger
+                    let logic = \(className)(logger: logger)
+                    self.logic = logic
 
-                    await self.acceptLoop()
-                }
-
-                public func shutdown()
-                {
-                    self.running = false
-                }
-
-                func acceptLoop() async
-                {
-                    while self.running
+                    let systemd = try SystemdConnection()
+                    guard let authenticatedConnection = try? NametagServerConnection(systemd, logger) else
                     {
-                        do
-                        {
-                            let connection = try await self.listener.accept()
-
-                            guard let authenticatedConnection = try? await AsyncNametagServerConnection(connection, logger) else
-                            {
-                                try? await connection.close()
-                                continue
-                            }
-
-                            Task
-                            {
-                                try await self.handleConnection(authenticatedConnection)
-                            }
-                        }
-                        catch
-                        {
-                            print(error)
-                            self.running = false
-                            return
-                        }
+                        throw \(className)Error.couldNotAuthenticate
                     }
+
+                    self.connection = authenticatedConnection
+
+                    self.handle()
                 }
 
-                func handleConnection(_ connection: AuthenticatedConnection) async throws
+                func handle()
                 {
-                    while self.running
+                    while true
                     {
                         do
                         {
-                            let requestData = try await connection.network.readWithLengthPrefix(prefixSizeInBits: 64)
+                            guard let requestData = connection.network.readWithLengthPrefix(prefixSizeInBits: 64) else
+                            {
+                                throw \(className)ServerError.readFailed
+                            }
 
                             print("Received a request:\\n\\(requestData.string)")
 
@@ -164,7 +140,7 @@ extension SwiftGenerator
                                 encoder.outputFormatting = .withoutEscapingSlashes
                                 let responseData = try encoder.encode(response)
                                 print("Sending a response:\\n\\(responseData.string)")
-                                try await connection.network.writeWithLengthPrefix(responseData, 64)
+                                let _ = connection.network.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
                             }
                             catch
                             {
@@ -179,6 +155,7 @@ extension SwiftGenerator
 
             public enum \(className)ServerError: Error
             {
+                case couldNotAuthenticate
                 case connectionRefused(String, Int)
                 case writeFailed
                 case readFailed
@@ -198,7 +175,7 @@ extension SwiftGenerator
 
             import Foundation
 
-            import TransmissionAsync
+            import TransmissionTypes
             \(codableImports)
             \(importLines)
 
@@ -206,15 +183,19 @@ extension SwiftGenerator
             {
                 let listener: TransmissionTypes.Listener
                 let handler: \(className)
+                let acceptQueue = DispatchQueue(label: "SwitchboardAcceptQueue")
 
                 var running: Bool = true
 
-                public init(listener: AsyncListener, handler: \(className)) async
+                public init(listener: TransmissionTypes.Listener, handler: \(className)) async
                 {
                     self.listener = listener
                     self.handler = handler
 
-                    await self.acceptLoop()
+                    await AsyncAwaitAsynchronizer.async
+                    {
+                        self.acceptLoop()
+                    }
                 }
 
                 public func shutdown()
@@ -222,17 +203,17 @@ extension SwiftGenerator
                     self.running = false
                 }
 
-                func acceptLoop() async
+                func acceptLoop()
                 {
                     while self.running
                     {
                         do
                         {
-                            let connection = try await self.listener.accept()
+                            let connection = try self.listener.accept()
 
-                            Task
+                            acceptQueue.async
                             {
-                                try await self.handleConnection(connection)
+                                self.handleConnection(connection)
                             }
                         }
                         catch
@@ -244,13 +225,16 @@ extension SwiftGenerator
                     }
                 }
 
-                func handleConnection(_ connection: AsyncConnection) async throws
+                func handleConnection(_ connection: TransmissionTypes.Connection)
                 {
                     while self.running
                     {
                         do
                         {
-                            let requestData = try await connection.readWithLengthPrefix(prefixSizeInBits: 64)
+                            guard let requestData = connection.readWithLengthPrefix(prefixSizeInBits: 64) else
+                            {
+                                throw \(className)ServerError.readFailed
+                            }
 
                             print("Received a request:\\n\\(requestData.string)")
 
@@ -272,7 +256,7 @@ extension SwiftGenerator
                                 encoder.outputFormatting = .withoutEscapingSlashes
                                 let responseData = try encoder.encode(response)
                                 print("Sending a response:\\n\\(responseData.string)")
-                                let _ = try await connection.writeWithLengthPrefix(responseData, 64)
+                                let _ = connection.writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64)
                             }
                             catch
                             {
@@ -296,13 +280,13 @@ extension SwiftGenerator
         }
     }
 
-    func generateServerCases(_ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) -> String
+    func generateServiceCases(_ className: String, _ functions: [Function], authenticateClient: Bool, format: SerializationFormat = .json) -> String
     {
         let cases = functions.map { self.generateServerCase(className, $0, authenticateClient: authenticateClient) }
         return cases.joined(separator: "\n")
     }
 
-    func generateServerCase(_ className: String, _ function: Function, authenticateClient: Bool, format: SerializationFormat = .json) -> String
+    func generateServiceCase(_ className: String, _ function: Function, authenticateClient: Bool, format: SerializationFormat = .json) -> String
     {
         var publicKey = ""
         var connectionString = "connection"
@@ -338,7 +322,10 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64)
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
                 else
@@ -352,7 +339,10 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64) else
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
             }
@@ -369,7 +359,10 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64)
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
                 else
@@ -383,7 +376,10 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64)
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
             }
@@ -412,7 +408,10 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64)
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
                 else
@@ -426,7 +425,10 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64)
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
             }
@@ -443,7 +445,10 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64)
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
                 else
@@ -457,14 +462,17 @@ extension SwiftGenerator
                                         let responseData = try encoder.encode(response)
                                         print("Sending a response:\\n\\(responseData.string)")
 
-                                        try await \(connectionString).writeWithLengthPrefix(responseData, 64)
+                                        guard \(connectionString).writeWithLengthPrefix(data: responseData, prefixSizeInBits: 64) else
+                                        {
+                                            throw \(className)ServerError.writeFailed
+                                        }
                 """
                 }
             }
         }
     }
 
-    func generateServerArgument(_ parameter: FunctionParameter) -> String
+    func generateServiceArgument(_ parameter: FunctionParameter) -> String
     {
         return "\(parameter.name): value.\(parameter.name)"
     }

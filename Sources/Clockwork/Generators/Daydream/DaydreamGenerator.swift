@@ -220,16 +220,17 @@ public class DaydreamGenerator
                 {
                     if function.throwing
                     {
-                        // f(S) -> T
+                        // f(S) throws -> T
                         namespace.record("\(function.name)_request".text, argumentsTypeName)
-                        namespace.record("\(function.name)_response_value".text, returnType)
                         namespace.`enum`("\(function.name)_response".text, "\(function.name)_response_value".text, "Error")
+                        namespace.record("\(function.name)_response_value".text, returnType)
                     }
                     else
                     {
                         // f(S) -> T
                         namespace.record("\(function.name)_request".text, argumentsTypeName)
-                        namespace.record("\(function.name)_response".text, returnType)
+                        namespace.record("\(function.name)_response".text, "\(function.name)_response_value".text)
+                        namespace.record("\(function.name)_response_value".text, returnType)
                     }
                 }
             }

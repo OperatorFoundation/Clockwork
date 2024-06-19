@@ -52,7 +52,7 @@ public class SwiftParser: Parser
 
     public func findFunctions(_ source: String) throws -> [Function]
     {
-        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [A-Za-z0-9\\[\\]<>]+[?]?)?")
+        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [(), A-Za-z0-9\\[\\]<>]+[?]?)?")
         let lines = source.split(separator: "\n").map { String($0) }
         let results: [String] = lines.compactMap
         {
@@ -176,7 +176,7 @@ public class SwiftParser: Parser
 
         if result.contains("(")
         {
-            return nil
+            throw SwiftParserError.unsupportedReturnType
         }
 
         return result
@@ -194,4 +194,9 @@ public class SwiftParser: Parser
 
         return function.split(separator: " throws ").count == 2
     }
+}
+
+public enum SwiftParserError: Error
+{
+    case unsupportedReturnType
 }
