@@ -28,13 +28,13 @@ public class SwiftGenerator
         return importLines.sorted().joined(separator: "\n")
     }
 
-    func generateRequestStructs(_ functions: [Function]) throws -> String
+    func generateRequestStructs(_ className: String, _ functions: [Function]) throws -> String
     {
-        let structs = try functions.compactMap { try self.generateStruct($0) }
+        let structs = try functions.compactMap { try self.generateStruct(className, $0) }
         return structs.joined(separator: "\n\n")
     }
 
-    func generateStruct(_ function: Function) throws -> String?
+    func generateStruct(_ className: String, _ function: Function) throws -> String?
     {
         if function.parameters.isEmpty
         {
@@ -51,7 +51,7 @@ public class SwiftGenerator
         let initList = inits.joined(separator: "\n")
 
         return """
-        public struct \(function.name.capitalized): Codable
+        public struct \(className)\(function.name.capitalized): Codable
         {
         \(fieldList)
 

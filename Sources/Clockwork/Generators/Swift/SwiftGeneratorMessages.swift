@@ -49,8 +49,8 @@ extension SwiftGenerator
 
         let dateString = formatter.string(from: date)
 
-        let requestEnums = self.generateRequestEnumsText(functions)
-        let requestStructs = try self.generateRequestStructs(functions)
+        let requestEnums = self.generateRequestEnumsText(className, functions)
+        let requestStructs = try self.generateRequestStructs(className, functions)
 
         let responseEnums = try self.generateResponseEnumsText(functions)
         let importLines = self.generateImports(imports)
@@ -94,13 +94,13 @@ extension SwiftGenerator
         """
     }
 
-    func generateRequestEnumsText(_ functions: [Function]) -> String
+    func generateRequestEnumsText(_ className: String, _ functions: [Function]) -> String
     {
-        let enums = functions.map { self.generateRequestEnumCase($0) }
+        let enums = functions.map { self.generateRequestEnumCase(className, $0) }
         return enums.joined(separator: "\n")
     }
 
-    func generateRequestEnumCase(_ function: Function) -> String
+    func generateRequestEnumCase(_ className: String, _ function: Function) -> String
     {
         if function.parameters.isEmpty
         {
@@ -108,7 +108,7 @@ extension SwiftGenerator
         }
         else
         {
-            return "    case \(function.name.capitalized)Request(value: \(function.name.capitalized))"
+            return "    case \(function.name.capitalized)Request(value: \(className)\(function.name.capitalized))"
         }
     }
 

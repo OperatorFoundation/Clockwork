@@ -127,7 +127,7 @@ public class HppParser: Parser
                 let name = try self.findFunctionName(functionText)
                 let parameters = try self.findParameters(functionText)
                 let returnType = try self.findFunctionReturnType(functionText)
-                return Function(name: name, parameters: parameters, returnType: returnType, throwing: false)
+                return Function(name: name, parameters: parameters, returnType: returnType, throwing: false, async: false)
             }
             catch
             {

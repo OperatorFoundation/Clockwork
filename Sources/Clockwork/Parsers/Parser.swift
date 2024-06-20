@@ -23,6 +23,7 @@ public struct Function: Codable
     let parameters: [FunctionParameter]
     let returnType: String?
     let throwing: Bool
+    let async: Bool
 }
 
 public struct FunctionParameter: Codable

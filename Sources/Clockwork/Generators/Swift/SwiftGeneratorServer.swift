@@ -136,7 +136,7 @@ extension SwiftGenerator
                     }
                 }
 
-                func handleConnection(_ connection: AuthenticatedConnection) async throws
+                func handleConnection(_ connection: AsyncAuthenticatedConnection) async throws
                 {
                     while self.running
                     {
@@ -317,6 +317,16 @@ extension SwiftGenerator
                 encoder = "CBOREncoder"
         }
 
+        let awaitText: String
+        if function.async
+        {
+            awaitText = "await "
+        }
+        else
+        {
+            awaitText = ""
+        }
+
         if function.parameters.isEmpty
         {
             if authenticateClient
@@ -332,7 +342,7 @@ extension SwiftGenerator
                     return """
                                     case .\(function.name.capitalized)Request:
                                         try self.handler.\(function.name)(\(publicKey))
-                                        let response = try \(className)Response.\(function.name.capitalized)Response
+                                        let response = try \(awaitText)\(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes
                                         let responseData = try encoder.encode(response)
@@ -345,7 +355,7 @@ extension SwiftGenerator
                 {
                     return """
                                     case .\(function.name.capitalized)Request:
-                                        self.handler.\(function.name)(\(publicKey))
+                                        \(awaitText)self.handler.\(function.name)(\(publicKey))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes
@@ -362,7 +372,7 @@ extension SwiftGenerator
                 {
                     return """
                                     case .\(function.name.capitalized)Request:
-                                        let result = try self.handler.\(function.name)(\(publicKey))
+                                        let result = try \(awaitText)self.handler.\(function.name)(\(publicKey))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes
@@ -376,7 +386,7 @@ extension SwiftGenerator
                 {
                     return """
                                     case .\(function.name.capitalized)Request:
-                                        let result = self.handler.\(function.name)(\(publicKey)
+                                        let result = \(awaitText)self.handler.\(function.name)(\(publicKey))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes
@@ -405,7 +415,7 @@ extension SwiftGenerator
                 {
                     return """
                                     case .\(function.name.capitalized)Request(let value):
-                                        try self.handler.\(function.name)(\(publicKey)\(argumentList))
+                                        try \(awaitText)self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes
@@ -419,7 +429,7 @@ extension SwiftGenerator
                 {
                     return """
                                     case .\(function.name.capitalized)Request(let value):
-                                        self.handler.\(function.name)(\(publicKey)\(argumentList))
+                                        \(awaitText)self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes
@@ -436,7 +446,7 @@ extension SwiftGenerator
                 {
                     return """
                                     case .\(function.name.capitalized)Request(let value):
-                                        let result = try self.handler.\(function.name)(\(publicKey)\(argumentList))
+                                        let result = try \(awaitText)self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes
@@ -450,7 +460,7 @@ extension SwiftGenerator
                 {
                     return """
                                     case .\(function.name.capitalized)Request(let value):
-                                        let result = self.handler.\(function.name)(\(publicKey)\(argumentList))
+                                        let result = \(awaitText)self.handler.\(function.name)(\(publicKey)\(argumentList))
                                         let response = \(className)Response.\(function.name.capitalized)Response(value: result)
                                         let encoder = \(encoder)()
                                         encoder.outputFormatting = .withoutEscapingSlashes

@@ -52,7 +52,7 @@ public class SwiftParser: Parser
 
     public func findFunctions(_ source: String) throws -> [Function]
     {
-        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( throws)?( -> [(), A-Za-z0-9\\[\\]<>]+[?]?)?")
+        let regex = try Regex("public func [A-Za-z0-9]+\\([^\\)]*\\)( async)?( throws)?( -> [(), A-Za-z0-9\\[\\]<>]+[?]?)?")
         let lines = source.split(separator: "\n").map { String($0) }
         let results: [String] = lines.compactMap
         {
@@ -86,7 +86,8 @@ public class SwiftParser: Parser
                 let parameters = try self.findParameters(function)
                 let returnType = try self.findFunctionReturnType(function)
                 let throwing = try self.findFunctionThrowing(function)
-                return Function(name: name, parameters: parameters, returnType: returnType, throwing: throwing)
+                let async = try self.findFunctionAsync(function)
+                return Function(name: name, parameters: parameters, returnType: returnType, throwing: throwing, async: async)
             }
             catch
             {
@@ -193,6 +194,11 @@ public class SwiftParser: Parser
         }
 
         return function.split(separator: " throws ").count == 2
+    }
+
+    public func findFunctionAsync(_ function: String) throws -> Bool
+    {
+        return function.split(separator: " ").contains("async")
     }
 }
 

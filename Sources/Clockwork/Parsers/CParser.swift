@@ -65,7 +65,7 @@ public class CParser: Parser
                 let parameters = try self.findParameters(function)
                 let returnType = try self.findFunctionReturnType(function)
                 let throwing = try self.findFunctionThrowing(function)
-                return Function(name: name, parameters: parameters, returnType: returnType, throwing: throwing)
+                return Function(name: name, parameters: parameters, returnType: returnType, throwing: throwing, async: false)
             }
             catch
             {

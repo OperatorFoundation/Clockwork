@@ -53,26 +53,20 @@ extension SwiftGenerator
         var firstImportLines = "import TransmissionTypes"
         var classPropertyLines = """
                 let connection: TransmissionTypes.Connection
-                let lock = DispatchSemaphore(value: 1)
             """
 
         if authenticateClient
         {
             firstImportLines = """
-            #if os(macOS)
-            import os.log
-            #else
             import Logging
-            #endif
 
-            import TransmissionNametag
-            import TransmissionTypes
+            import TransmissionAsync
+            import TransmissionAsyncNametag
             """
             
             classPropertyLines = """
                 public let publicKey: PublicKey
-                let connection: TransmissionTypes.Connection
-                let lock = DispatchSemaphore(value: 1)
+                let connection: AsyncConnection
             """
         }
         let importLines = self.generateImports(imports)
@@ -104,7 +98,7 @@ extension SwiftGenerator
         import \(className)
         \(importLines)
 
-        public class \(className)Client
+        public actor \(className)Client
         {
         \(classPropertyLines)
 
@@ -128,7 +122,7 @@ extension SwiftGenerator
         if authenticateClient
         {
             return """
-                public init(connection: AuthenticatingConnection, keychain: KeychainProtocol, logger: Logger) throws
+                public init(connection: AsyncAuthenticatingConnection, keychain: KeychainProtocol, logger: Logger) throws
                 {
                     self.connection = connection.network
                     self.publicKey = connection.publicKey
@@ -138,7 +132,7 @@ extension SwiftGenerator
         else
         {
             return """
-                public init(connection: TransmissionTypes.Connection)
+                public init(connection: AsyncConnection)
                 {
                     self.connection = connection
                 }
@@ -170,11 +164,11 @@ extension SwiftGenerator
 
         if let returnType = function.returnType
         {
-            return "    public func \(function.name)(\(parameterList)) throws -> \(returnType)"
+            return "    public func \(function.name)(\(parameterList)) async throws -> \(returnType)"
         }
         else
         {
-            return "    public func \(function.name)(\(parameterList)) throws"
+            return "    public func \(function.name)(\(parameterList)) async throws"
         }
     }
 
@@ -189,7 +183,7 @@ extension SwiftGenerator
         {
             let arguments = function.parameters.map { self.generateArgument($0) }
             let argumentList = arguments.joined(separator: ", ")
-            structHandler = "(value: \(function.name.capitalized)(\(argumentList)))"
+            structHandler = "(value: \(className)\(function.name.capitalized)(\(argumentList)))"
         }
 
         let returnHandler: String
@@ -236,25 +230,13 @@ extension SwiftGenerator
 
         return """
             {
-                defer
-                {
-                    self.lock.signal()
-                }
-                self.lock.wait()
-
                 let message = \(className)Request.\(function.name.capitalized)Request\(structHandler)
                 let encoder = \(encoder)()
                 encoder.outputFormatting = .withoutEscapingSlashes
                 let data = try encoder.encode(message)
-                guard self.connection.writeWithLengthPrefix(data: data, prefixSizeInBits: 64) else
-                {
-                    throw \(className)ClientError.writeFailed
-                }
+                try await self.connection.writeWithLengthPrefix(data, 64)
 
-                guard let responseData = self.connection.readWithLengthPrefix(prefixSizeInBits: 64) else
-                {
-                    throw \(className)ClientError.readFailed
-                }
+                let responseData = try await self.connection.readWithLengthPrefix(prefixSizeInBits: 64)
 
                 let decoder = \(decoder)()
 
